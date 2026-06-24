@@ -1,7 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 
 export default function MainLayout() {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
   // Tự động kích hoạt Lucide Icons từ CDN khi component mount
   useEffect(() => {
     if (window.lucide) {
@@ -17,7 +19,7 @@ export default function MainLayout() {
         .sidebar-active-indicator {
           width: 4px;
           height: 38px;
-          background-color: #2D1B4E;
+          background-color: #4C2B74;
           border-radius: 0 4px 4px 0;
           position: absolute;
           left: 0;
@@ -27,15 +29,15 @@ export default function MainLayout() {
       `}</style>
 
       {/* BEGIN: LeftSidebar */}
-      <aside className="w-64 bg-[#FDFDFF] border-r border-gray-200 flex flex-col h-full z-20" data-purpose="main-navigation">
+      <aside className={`${isSidebarOpen ? 'w-64' : 'w-0'} bg-[#F6F7FF] border-r border-gray-200 flex flex-col h-full z-20 transition-all duration-300 overflow-hidden`} data-purpose="main-navigation">
         
         {/* Logo Section */}
         <div className="p-6 flex items-center space-x-3">
-          <div className="w-10 h-10 bg-[#2D1B4E] rounded-lg flex items-center justify-center">
+          <div className="w-10 h-10 bg-[#4C2B74] rounded-lg flex items-center justify-center">
             <i className="text-white w-6 h-6" data-lucide="check-square"></i>
           </div>
           <div>
-            <h1 className="text-[#2D1B4E] font-bold text-sm leading-tight">TaskFlow</h1>
+            <h1 className="text-[#4C2B74] font-bold text-sm leading-tight">TaskFlow</h1>
             <p className="text-[#6B7280] text-[10px]">Productivity Pro</p>
           </div>
         </div>
@@ -58,8 +60,8 @@ export default function MainLayout() {
           {/* Active Item: Users (Sửa đổi chuẩn góc bo rounded-xl và màu nền gốc) */}
           <div className="relative flex items-center">
             <div className="sidebar-active-indicator"></div>
-            <a className="flex items-center flex-1 px-4 py-3 bg-[#E0E8FF] text-[#2D1B4E] rounded-xl transition-colors ml-2" href="#">
-              <i className="w-5 h-5 mr-3 text-[#2D1B4E]" data-lucide="users"></i>
+            <a className="flex items-center flex-1 px-4 py-3 bg-[#E0E8FF] text-[#4C2B74] rounded-xl transition-colors ml-2" href="#">
+              <i className="w-5 h-5 mr-3 text-[#4C2B74]" data-lucide="users"></i>
               <span className="text-sm font-bold">Users</span>
             </a>
           </div>
@@ -98,7 +100,10 @@ export default function MainLayout() {
         {/* BEGIN: MainHeader */}
         <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 z-10" data-purpose="top-header">
           <div className="flex items-center flex-1 max-w-xl">
-            <button className="p-2 mr-4 text-gray-500 lg:hidden">
+            <button 
+              className="p-2 mr-4 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            >
               <i className="w-6 h-6" data-lucide="menu"></i>
             </button>
             <div className="relative w-full max-w-md">
@@ -115,7 +120,7 @@ export default function MainLayout() {
           
           <div className="flex items-center space-x-6">
             {/* Create Button */}
-            <button className="bg-[#2D1B4E] text-white px-4 py-2 rounded-lg flex items-center text-sm font-semibold hover:bg-opacity-90 transition-all">
+            <button className="bg-[#4C2B74] text-white px-4 py-2 rounded-lg flex items-center text-sm font-semibold hover:bg-opacity-90 transition-all">
               <i className="w-4 h-4 mr-2" data-lucide="plus"></i>
               Create
             </button>
