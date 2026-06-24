@@ -1,0 +1,212 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom'; // 1. Khai báo import điều hướng
+
+export default function LoginPage() {
+    // State quản lý form và UI
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [isDark, setIsDark] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [isRedirecting, setIsRedirecting] = useState(false);
+    const [emailError, setEmailError] = useState(false);
+
+    const navigate = useNavigate(); // 2. Khởi tạo hook điều hướng trong Component
+
+    // Theo dõi và đồng bộ hóa class 'dark' trên thẻ html
+    useEffect(() => {
+        if (isDark) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    }, [isDark]);
+
+    // Kiểm tra lỗi email trực tiếp khi gõ
+    const handleEmailChange = (e) => {
+        const value = e.target.value;
+        setEmail(value);
+        if (value.includes('@') || value === '') {
+            setEmailError(false);
+        }
+    };
+
+    // Xử lý sự kiện Submit Form
+    const handleLogin = (e) => {
+        e.preventDefault();
+
+        if (!email.includes('@')) {
+            setEmailError(true);
+            return;
+        }
+
+        setIsLoading(true);
+
+        // Giả lập hiệu ứng xoay nạp dữ liệu trong 2 giây
+        setTimeout(() => {
+            setIsLoading(false);
+            setIsRedirecting(true);
+
+            // Giả lập trạng thái chuyển hướng hệ thống trong 1 giây tiếp theo
+            setTimeout(() => {
+                setIsRedirecting(false);
+                setEmail('');
+                setPassword('');
+                
+                // 3. QUAN TRỌNG NHẤT: Kích hoạt lệnh chuyển hướng sang trang khung Dashboard chung
+                navigate('/dashboard'); 
+            }, 1000);
+        }, 2000);
+    };
+
+    return (
+        <div className="bg-surface dark:bg-inverse-surface min-h-screen flex items-center justify-center p-6 transition-colors duration-300 font-['Inter']">
+
+            {/* Nút chuyển đổi giao diện Sáng / Tối */}
+            <button
+                type="button"
+                className="fixed top-6 right-6 p-2 bg-surface-container dark:bg-on-surface-variant/20 rounded-full hover:bg-surface-container-high transition-colors"
+                onClick={() => setIsDark(!isDark)}
+            >
+                <span className="material-symbols-outlined text-on-surface-variant dark:text-inverse-primary">
+                    {isDark ? 'light_mode' : 'dark_mode'}
+                </span>
+            </button>
+
+            <main className="w-full max-w-[440px]">
+                {/* Thẻ Login Card */}
+                <div className="bg-surface-container-lowest dark:bg-on-surface/10 backdrop-blur-xl border border-outline-variant/30 dark:border-outline/20 rounded-xl shadow-sm p-8 md:p-12 flex flex-col gap-6">
+
+                    {/* Phần Logo & Tiêu đề */}
+                    <div className="flex flex-col items-center gap-4 text-center">
+                        <div className="w-16 h-16 bg-primary-container/10 rounded-xl flex items-center justify-center mb-1">
+                            <img alt="TaskMaster Logo" className="w-12 h-12 object-contain" src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=100&q=80" />
+                        </div>
+                        <div className="space-y-1">
+                            <h1 className="text-[24px] leading-[32px] font-semibold tracking-[-0.01em] text-on-surface dark:text-inverse-on-surface">
+                                Welcome back
+                            </h1>
+                            <p className="text-[14px] leading-[20px] font-normal text-on-surface-variant dark:text-surface-variant">
+                                Enter your credentials to access your workspace
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Khu vực Form */}
+                    <form className="flex flex-col gap-6" onSubmit={handleLogin}>
+
+                        {/* Ô nhập Email */}
+                        <div className="flex flex-col gap-1">
+                            <label className="text-[12px] leading-[16px] tracking-[0.05em] font-medium text-on-surface-variant dark:text-surface-variant" htmlFor="email">
+                                Email Address
+                            </label>
+                            <div className="relative group">
+                                <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline dark:text-outline-variant text-[20px]">
+                                    mail
+                                </span>
+                                <input
+                                    id="email"
+                                    type="email"
+                                    placeholder="name@company.com"
+                                    required
+                                    value={email}
+                                    onChange={handleEmailChange}
+                                    className={`w-full pl-14 pr-4 py-4 bg-transparent border rounded-lg text-[14px] leading-[20px] font-normal text-on-surface dark:text-inverse-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-outline/50 
+                                    ${emailError ? 'border-error dark:border-error-container' : 'border-outline-variant dark:border-outline/30'}`}
+                                />
+                            </div>
+
+                            {/* Trạng thái lỗi Validation */}
+                            {emailError && (
+                                <div className="flex items-center gap-1 mt-1 text-error dark:text-error-container">
+                                    <span className="material-symbols-outlined text-[16px]">error</span>
+                                    <span className="text-[12px] leading-[16px] font-medium tracking-[0.05em]">Invalid email format</span>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Ô nhập Mật khẩu */}
+                        <div className="flex flex-col gap-1">
+                            <label className="text-[12px] leading-[16px] tracking-[0.05em] font-medium text-on-surface-variant dark:text-surface-variant" htmlFor="password">
+                                Password
+                            </label>
+                            <div className="relative group">
+                                <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline dark:text-outline-variant text-[20px]">
+                                    lock
+                                </span>
+                                <input
+                                    id="password"
+                                    type={showPassword ? 'text' : 'password'}
+                                    placeholder="••••••••"
+                                    required
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="w-full pl-14 pr-14 py-4 bg-transparent border border-outline-variant dark:border-outline/30 rounded-lg text-[14px] leading-[20px] font-normal text-on-surface dark:text-inverse-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-outline/50"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-outline hover:text-on-surface dark:text-outline-variant dark:hover:text-inverse-on-surface transition-colors"
+                                >
+                                    <span className="material-symbols-outlined text-[20px]">
+                                        {showPassword ? 'visibility_off' : 'visibility'}
+                                    </span>
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Ghi nhớ đăng nhập & Quên mật khẩu */}
+                        <div className="flex items-center justify-between">
+                            <label className="flex items-center gap-2 cursor-pointer group">
+                                <input
+                                    type="checkbox"
+                                    className="w-[18px] h-[18px] border border-outline rounded focus:ring-0 checked:bg-primary dark:checked:bg-primary text-primary cursor-pointer accent-primary"
+                                />
+                                <span className="text-[12px] leading-[16px] font-medium tracking-[0.05em] text-on-surface-variant dark:text-surface-variant group-hover:text-on-surface transition-colors">
+                                    Remember Me
+                                </span>
+                            </label>
+                            <a className="text-[12px] leading-[16px] font-medium tracking-[0.05em] text-primary dark:text-inverse-primary hover:underline underline-offset-4" href="#forgot">
+                                Forgot Password?
+                            </a>
+                        </div>
+
+                        {/* Nút Đăng nhập / Gửi */}
+                        <button
+                            type="submit"
+                            disabled={isLoading || isRedirecting}
+                            className={`w-full py-4 text-white text-[20px] font-semibold flex items-center justify-center gap-4 rounded-lg active:scale-[0.98] transition-all duration-200 shadow-sm
+                            ${isRedirecting ? 'bg-tertiary-container' : 'bg-primary dark:bg-primary-container hover:bg-primary/90'}`}
+                        >
+                            <span className={isLoading ? 'opacity-50' : ''}>
+                                {isRedirecting ? 'Redirecting...' : 'Login'}
+                            </span>
+
+                            {isLoading && (
+                                <div className="border-2 border-white/30 rounded-full border-top-2 border-t-white w-4 h-4 animate-spin"></div>
+                            )}
+                        </button>
+                    </form>
+
+                    {/* Phần chân trang (Đăng ký) */}
+                    <div className="pt-6 border-t border-outline-variant/30 dark:border-outline/20 text-center">
+                        <p className="text-[14px] leading-[20px] font-normal text-on-surface-variant dark:text-surface-variant">
+                            Don't have an account?{' '}
+                            <a className="text-primary dark:text-inverse-primary font-bold hover:underline underline-offset-4" href="#register">
+                                Register
+                            </a>
+                        </p>
+                    </div>
+                </div>
+
+                {/* Trạng thái hệ thống */}
+                <div className="mt-6 flex items-center justify-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-tertiary-container animate-pulse"></div>
+                    <span className="text-[12px] leading-[16px] font-medium tracking-[0.05em] text-on-surface-variant/60 dark:text-surface-variant/40">
+                        All systems operational
+                    </span>
+                </div>
+            </main>
+        </div>
+    );
+}
