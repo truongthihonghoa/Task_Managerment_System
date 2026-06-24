@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import taskflowLogo from '../assets/taskflow-logo.png';
 import { useNavigate } from 'react-router-dom'; // 1. Khai báo import điều hướng
 
 export default function LoginPage() {
@@ -79,8 +80,8 @@ export default function LoginPage() {
 
                     {/* Phần Logo & Tiêu đề */}
                     <div className="flex flex-col items-center gap-4 text-center">
-                        <div className="w-16 h-16 bg-primary-container/10 rounded-xl flex items-center justify-center mb-1">
-                            <img alt="TaskMaster Logo" className="w-12 h-12 object-contain" src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=100&q=80" />
+                        <div className="w-16 h-16 bg-primary-container/10 rounded-xl flex items-center justify-center mb-1 border-[5px] border-[#2D1B4E] overflow-hidden">
+                            <img alt="TaskMaster Logo" className="w-[86px] h-[86px] max-w-none object-contain scale-[1.35]" src={taskflowLogo}/>
                         </div>
                         <div className="space-y-1">
                             <h1 className="text-[24px] leading-[32px] font-semibold tracking-[-0.01em] text-on-surface dark:text-inverse-on-surface">
@@ -96,7 +97,7 @@ export default function LoginPage() {
                     <form className="flex flex-col gap-6" onSubmit={handleLogin}>
 
                         {/* Ô nhập Email */}
-                        <div className="flex flex-col gap-1">
+                        <div className="flex flex-col gap-[9px]">
                             <label className="text-[12px] leading-[16px] tracking-[0.05em] font-medium text-on-surface-variant dark:text-surface-variant" htmlFor="email">
                                 Email Address
                             </label>
@@ -126,7 +127,7 @@ export default function LoginPage() {
                         </div>
 
                         {/* Ô nhập Mật khẩu */}
-                        <div className="flex flex-col gap-1">
+                        <div className="flex flex-col gap-[9px]">
                             <label className="text-[12px] leading-[16px] tracking-[0.05em] font-medium text-on-surface-variant dark:text-surface-variant" htmlFor="password">
                                 Password
                             </label>
@@ -146,7 +147,7 @@ export default function LoginPage() {
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-outline hover:text-on-surface dark:text-outline-variant dark:hover:text-inverse-on-surface transition-colors"
+                                    className="absolute right-4 top-[54%] -translate-y-1/2 text-outline hover:text-on-surface dark:text-outline-variant dark:hover:text-inverse-on-surface transition-colors"
                                 >
                                     <span className="material-symbols-outlined text-[20px]">
                                         {showPassword ? 'visibility_off' : 'visibility'}
@@ -166,7 +167,7 @@ export default function LoginPage() {
                                     Remember Me
                                 </span>
                             </label>
-                            <a className="text-[12px] leading-[16px] font-medium tracking-[0.05em] text-primary dark:text-inverse-primary hover:underline underline-offset-4" href="#forgot">
+                            <a className="text-[12px] leading-[16px] font-medium tracking-[0.05em] text-[#2D1B4E] dark:text-[#2D1B4E]/80 hover:underline underline-offset-4" href="#forgot">
                                 Forgot Password?
                             </a>
                         </div>
@@ -175,8 +176,8 @@ export default function LoginPage() {
                         <button
                             type="submit"
                             disabled={isLoading || isRedirecting}
-                            className={`w-full py-4 text-white text-[20px] font-semibold flex items-center justify-center gap-4 rounded-lg active:scale-[0.98] transition-all duration-200 shadow-sm
-                            ${isRedirecting ? 'bg-tertiary-container' : 'bg-primary dark:bg-primary-container hover:bg-primary/90'}`}
+                            className={`w-full py-3 text-white text-[18px] font-semibold flex items-center justify-center gap-4 rounded-lg active:scale-[0.98] transition-all duration-200 shadow-sm
+                            ${isRedirecting ? 'bg-tertiary-container' : 'bg-[#4C2B74] hover:bg-[#4C2B74]/90 dark:bg-[#4C2B74]'}`}
                         >
                             <span className={isLoading ? 'opacity-50' : ''}>
                                 {isRedirecting ? 'Redirecting...' : 'Login'}
@@ -192,7 +193,7 @@ export default function LoginPage() {
                     <div className="pt-6 border-t border-outline-variant/30 dark:border-outline/20 text-center">
                         <p className="text-[14px] leading-[20px] font-normal text-on-surface-variant dark:text-surface-variant">
                             Don't have an account?{' '}
-                            <a className="text-primary dark:text-inverse-primary font-bold hover:underline underline-offset-4" href="#register">
+                            <a className="text-[#2D1B4E] dark:text-[#2D1B4E]/80 font-bold hover:underline underline-offset-4" href="#register">
                                 Register
                             </a>
                         </p>
