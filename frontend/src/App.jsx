@@ -9,6 +9,7 @@ import {
 
 import LoginPage from "./pages/LoginPage";
 import MainLayout from "./components/layout/MainLayout";
+import TaskManagement from "./pages/TaskManagement";
 
 
 export default function App() {
@@ -27,10 +28,10 @@ export default function App() {
 
 
                 {/* Main Layout */}
-                <Route 
-                    path="/mainlayout" 
-                    element={<MainLayout />}
-                />
+                <Route path="/mainlayout" element={<MainLayout />}>
+                    <Route index element={<TaskManagement />} />
+                    <Route path="tasks" element={<TaskManagement />} />
+                </Route>
 
 
                 {/* Không tìm thấy route */}

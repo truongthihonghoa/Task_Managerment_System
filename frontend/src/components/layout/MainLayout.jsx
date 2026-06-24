@@ -49,22 +49,20 @@ export default function MainLayout() {
             <span className="text-sm font-medium">Dashboard</span>
           </a>
           
-          <a className="flex items-center px-4 py-3 text-[#6B7280] hover:bg-gray-50 rounded-xl group transition-colors justify-between" href="#">
-            <div className="flex items-center">
+          {/* Active Item: Tasks */}
+          <div className="flex items-center">
+            <div className="w-1 h-8 bg-[#4C2B74] rounded-r-full"></div>
+            <a className="flex items-center flex-1 px-4 py-3 bg-[#E0E8FF] text-[#4C2B74] rounded-xl transition-colors ml-2" href="/mainlayout/tasks">
               <i className="w-5 h-5 mr-3" data-lucide="clipboard-list"></i>
-              <span className="text-sm font-medium">Tasks</span>
-            </div>
-            <span className="bg-[#EADFF9] text-[#2D1B4E] text-[10px] font-bold px-2 py-0.5 rounded-full">12</span>
-          </a>
-
-          {/* Active Item: Users (Sửa đổi chuẩn góc bo rounded-xl và màu nền gốc) */}
-          <div className="relative flex items-center">
-            <div className="sidebar-active-indicator"></div>
-            <a className="flex items-center flex-1 px-4 py-3 bg-[#E0E8FF] text-[#4C2B74] rounded-xl transition-colors ml-2" href="#">
-              <i className="w-5 h-5 mr-3 text-[#4C2B74]" data-lucide="users"></i>
-              <span className="text-sm font-bold">Users</span>
+              <span className="text-sm font-bold">Tasks</span>
             </a>
           </div>
+
+          {/* Item: Users */}
+          <a className="flex items-center px-4 py-3 text-[#6B7280] hover:bg-gray-50 rounded-xl transition-colors" href="#">
+            <i className="w-5 h-5 mr-3" data-lucide="users"></i>
+            <span className="text-sm font-medium">Users</span>
+          </a>
 
           <a className="flex items-center px-4 py-3 text-[#6B7280] hover:bg-gray-50 rounded-xl transition-colors" href="#">
             <i className="w-5 h-5 mr-3" data-lucide="user-circle"></i>
@@ -147,18 +145,7 @@ export default function MainLayout() {
         <main className="flex-1 flex flex-col" data-purpose="main-display">
         {/* Render nested route components */}
         <Outlet />
-        {/* Centered Illustration Placeholder */}
-        <div className="flex flex-col items-center justify-center opacity-20">
-          <div className="relative w-48 h-48">
-              <div className="absolute inset-0 flex items-center justify-center">
-                <svg fill="none" height="240" viewBox="0 0 240 240" width="240" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M120 40L40 85L120 130L200 85L120 40Z" fill="#2D1B4E" fillOpacity="0.2"></path>
-                  <path d="M40 115L120 160L200 115M40 145L120 190L200 145" stroke="#2D1B4E" strokeLinecap="round" strokeLinejoin="round" strokeWidth="8"></path>
-                  <path d="M120 40L40 85L120 130L200 85L120 40Z" stroke="#2D1B4E" strokeLinecap="round" strokeLinejoin="round" strokeWidth="8"></path>
-                </svg>
-              </div>
-            </div>
-          </div>
+
         </main>
         {/* END: MainContentArea */}
 
