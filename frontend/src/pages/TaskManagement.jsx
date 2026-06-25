@@ -2,12 +2,19 @@ import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import CompleteSprintModal from '../components/tasks/CompleteSprintModal';
+import SprintInfoPopover from '../components/tasks/SprintInfoPopover';
+
 
 export default function TaskManagement() {
   const navigate = useNavigate();
   const [view, setView] = useState('list');
   const [selectedTasks, setSelectedTasks] = useState([]);
   const [isSprintExpanded, setIsSprintExpanded] = useState(true);
+  const [showCompleteModal, setShowCompleteModal] = useState(false);
+  const [showSprintInfo, setShowSprintInfo] = useState(false);
+  const insightsBtnRef = useRef(null);
+
   const [tasks, setTasks] = useState([
     { id: "TM-104", title: "Infrastructure setup", assignee: "Alex Rivera", pts: 4, status: "New", priority: "High", date: "Jun 24, 2026" },
     { id: "TM-301", title: "API Documentation update", assignee: "Sarah Chen", pts: 3, status: "In Progress", priority: "Medium", date: "Jun 28, 2026" },
@@ -159,13 +166,21 @@ export default function TaskManagement() {
           {/* Sprint Actions */}
           {view === 'board' && (
             <div className="flex items-center gap-2">
-              <button className="px-4 py-1.5 bg-[#f0edff] text-[#5e4db2] rounded text-[13px] font-semibold hover:bg-[#e6e1ff] transition-colors">
+              <button 
+                onClick={() => setShowCompleteModal(true)}
+                className="px-4 py-1.5 bg-[#f0edff] text-[#5e4db2] rounded text-[13px] font-semibold hover:bg-[#e6e1ff] transition-colors"
+              >
                 Complete sprint
               </button>
-              <button className="flex items-center justify-center w-[36px] h-[36px] border border-outline-variant rounded hover:bg-surface-container transition-colors shadow-sm">
+              <button 
+                ref={insightsBtnRef}
+                onClick={() => setShowSprintInfo(!showSprintInfo)}
+                className="flex items-center justify-center w-[36px] h-[36px] border border-outline-variant rounded hover:bg-surface-container transition-colors shadow-sm"
+              >
                 <span className="material-symbols-outlined text-[20px] text-on-surface">insights</span>
               </button>
             </div>
+
           )}
 
           {/* Date Filter */}
@@ -271,9 +286,13 @@ export default function TaskManagement() {
                     {tasks.filter(t => t.status === 'Done').length}
                   </span>
                 </div>
-                <button className="px-3 py-1 bg-[#f0edff] text-[#5e4db2] border border-[#e6e1ff] rounded text-[11px] font-bold hover:bg-[#e6e1ff] transition-colors shadow-sm">
+                <button 
+                  onClick={() => setShowCompleteModal(true)}
+                  className="px-3 py-1 bg-[#f0edff] text-[#5e4db2] border border-[#e6e1ff] rounded text-[11px] font-bold hover:bg-[#e6e1ff] transition-colors shadow-sm"
+                >
                   Complete sprint
                 </button>
+
                 <span className="material-symbols-outlined text-[18px] text-outline cursor-pointer hover:text-on-surface transition-colors">more_horiz</span>
               </div>
             </div>
@@ -339,7 +358,21 @@ export default function TaskManagement() {
           </div>
         </>
       )}
+      {/* Modals and Popovers */}
+      <CompleteSprintModal 
+        isOpen={showCompleteModal} 
+        onClose={() => setShowCompleteModal(false)}
+        sprintName="SCRUM Sprint 1"
+        completedTasksCount={tasks.filter(t => t.status === 'Done').length}
+        openTasksCount={tasks.filter(t => t.status !== 'Done').length}
+      />
+      <SprintInfoPopover 
+        isOpen={showSprintInfo}
+        onClose={() => setShowSprintInfo(false)}
+        anchorRef={insightsBtnRef}
+      />
     </div>
+
   );
 }
 
