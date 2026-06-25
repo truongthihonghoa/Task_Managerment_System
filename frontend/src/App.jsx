@@ -10,7 +10,7 @@ import {
 import LoginPage from "./pages/LoginPage";
 import MainLayout from "./components/layout/MainLayout";
 import TaskManagement from "./pages/TaskManagement";
-
+import SpaceManagement from "./pages/SpaceManagement";
 
 export default function App() {
 
@@ -29,8 +29,9 @@ export default function App() {
 
                 {/* Main Layout */}
                 <Route path="/mainlayout" element={<MainLayout />}>
-                    <Route index element={<TaskManagement />} />
-                    <Route path="tasks" element={<TaskManagement />} />
+                    <Route index element={<SpaceManagement />} />
+                    <Route path="tasks" element={<SpaceManagement />} />
+                    <Route path="tasks/:spaceId" element={<TaskManagement />} />
                 </Route>
 
 

@@ -1,15 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation, Link } from 'react-router-dom';
+
+import CreateTaskModal from '../tasks/CreateTaskModal';
 
 export default function MainLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const location = useLocation();
 
   // Tự động kích hoạt Lucide Icons từ CDN khi component mount
   useEffect(() => {
     if (window.lucide) {
       window.lucide.createIcons();
     }
-  }, []);
+  }, [location.pathname]);
 
   return (
     <div className="h-screen flex overflow-hidden font-['Inter'] bg-[#F5F7FA]">
@@ -44,18 +48,27 @@ export default function MainLayout() {
 
         {/* Navigation Links */}
         <nav className="flex-1 px-3 space-y-1 mt-4">
-          <a className="flex items-center px-4 py-3 text-[#6B7280] hover:bg-gray-50 rounded-xl group transition-colors" href="#">
+          <Link className="flex items-center px-4 py-3 text-[#6B7280] hover:bg-gray-50 rounded-xl group transition-colors" to="/mainlayout">
             <i className="w-5 h-5 mr-3" data-lucide="layout-grid"></i>
             <span className="text-sm font-medium">Dashboard</span>
-          </a>
+          </Link>
           
-          {/* Active Item: Tasks */}
+          {/* Item: Tasks (Always active or leads to Space Management) */}
           <div className="flex items-center">
-            <div className="w-1 h-8 bg-[#4C2B74] rounded-r-full"></div>
-            <a className="flex items-center flex-1 px-4 py-3 bg-[#E0E8FF] text-[#4C2B74] rounded-xl transition-colors ml-2" href="/mainlayout/tasks">
+            {(location.pathname === '/mainlayout/tasks' || location.pathname.includes('/mainlayout/tasks/')) && (
+              <div className="w-1 h-8 bg-[#4C2B74] rounded-r-full"></div>
+            )}
+            <Link 
+              className={`flex items-center flex-1 px-4 py-3 rounded-xl transition-colors ml-2 ${
+                (location.pathname === '/mainlayout/tasks' || location.pathname.includes('/mainlayout/tasks/'))
+                ? 'bg-[#E0E8FF] text-[#4C2B74]' 
+                : 'text-[#6B7280]'
+              }`} 
+              to="/mainlayout/tasks"
+            >
               <i className="w-5 h-5 mr-3" data-lucide="clipboard-list"></i>
-              <span className="text-sm font-bold">Tasks</span>
-            </a>
+              <span className={`text-sm ${(location.pathname === '/mainlayout/tasks' || location.pathname.includes('/mainlayout/tasks/')) ? 'font-bold' : 'font-medium'}`}>Tasks</span>
+            </Link>
           </div>
 
           {/* Item: Users */}
@@ -104,7 +117,7 @@ export default function MainLayout() {
             >
               <i className="w-6 h-6" data-lucide="menu"></i>
             </button>
-            <div className="relative w-full max-w-md">
+            <div className="relative w-full max-md">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <i className="h-4 w-4 text-gray-400" data-lucide="search"></i>
               </div>
@@ -118,7 +131,10 @@ export default function MainLayout() {
           
           <div className="flex items-center space-x-6">
             {/* Create Button */}
-            <button className="bg-[#4C2B74] text-white px-4 py-2 rounded-lg flex items-center text-sm font-semibold hover:bg-opacity-90 transition-all">
+            <button 
+              className="bg-[#4C2B74] text-white px-4 py-2 rounded-lg flex items-center text-sm font-semibold hover:bg-opacity-90 transition-all"
+              onClick={() => setIsCreateModalOpen(true)}
+            >
               <i className="w-4 h-4 mr-2" data-lucide="plus"></i>
               Create
             </button>
@@ -141,8 +157,15 @@ export default function MainLayout() {
         </header>
         {/* END: MainHeader */}
 
+        {/* Global Modal */}
+        <CreateTaskModal 
+          isOpen={isCreateModalOpen} 
+          onClose={() => setIsCreateModalOpen(false)} 
+        />
+
+
         {/* BEGIN: MainContentArea */}
-        <main className="flex-1 flex flex-col" data-purpose="main-display">
+        <main className="flex-1 flex flex-col overflow-hidden min-h-0" data-purpose="main-display">
         {/* Render nested route components */}
         <Outlet />
 

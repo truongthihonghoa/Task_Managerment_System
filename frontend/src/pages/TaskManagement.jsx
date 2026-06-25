@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { useNavigate } from 'react-router-dom';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
 export default function TaskManagement() {
+  const navigate = useNavigate();
   const [view, setView] = useState('list');
   const [selectedTasks, setSelectedTasks] = useState([]);
   const [isSprintExpanded, setIsSprintExpanded] = useState(true);
@@ -55,11 +58,15 @@ export default function TaskManagement() {
   };
 
   return (
-    <div className="px-6 pb-6 pt-10 h-full flex flex-col overflow-hidden bg-background text-on-surface" id="app-canvas">
+    <div className="px-6 pb-6 pt-10 flex flex-col bg-background text-on-surface" style={{ height: '100%', overflow: 'hidden', position: 'relative' }} id="app-canvas">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
-
+          <div className="flex items-center text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">
+            <span className="hover:text-primary cursor-pointer transition-colors" onClick={() => navigate('/mainlayout')}>Tasks</span>
+            <i className="w-3 h-3 mx-2 text-gray-400 material-symbols-outlined text-[12px]">chevron_right</i>
+            <span className="hover:text-primary cursor-pointer transition-colors" onClick={() => navigate('/mainlayout')}>Space Management</span>
+          </div>
           <h1 className="text-base font-bold text-[#5e4db2]">Task Management</h1>
         </div>
         <div className="flex items-center gap-3 bg-surface-container-low p-1 rounded-lg border border-outline-variant">
@@ -212,18 +219,21 @@ export default function TaskManagement() {
 
       {/* BOARD VIEW */}
       {view === 'board' && (
-        <DragDropContext onDragEnd={onDragEnd}>
-            <div className="flex gap-4 overflow-x-auto pb-6 scrollbar-hide flex-1" id="board-view-container">
+        <div style={{ flex: '1 1 0', minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <DragDropContext onDragEnd={onDragEnd}>
+            <div className="flex gap-4 pb-4 scrollbar-hide" id="board-view-container" style={{ flex: '1 1 0', minHeight: 0, overflowX: 'auto', overflowY: 'hidden', alignItems: 'stretch' }}>
               {['New', 'In Progress', 'In Testing', 'Pending Review', 'Need Revision', 'Done', 'Cancelled'].map(status => (
                 <KanbanColumn
                   key={status}
                   title={status}
                   tasks={tasks.filter(t => t.status === status)}
+                  setTasks={setTasks}
                   color={status === 'Need Revision' ? 'error' : status === 'Done' ? 'green' : status === 'Cancelled' ? 'grey' : 'outline'}
                 />
               ))}
             </div>
-        </DragDropContext>
+          </DragDropContext>
+        </div>
       )}
 
       {/* LIST VIEW */}
@@ -333,17 +343,15 @@ export default function TaskManagement() {
   );
 }
 
-function KanbanColumn({ title, tasks, color = 'outline' }) {
-  const headerClass = color === 'error'
-    ? 'bg-[#FFF0F0] border-[#FFDADA] text-[#BA1A1A]'
-    : color === 'green'
-      ? 'bg-[#E6FFF0] border-[#C2FFD9] text-[#006D3A]'
-      : color === 'grey'
-        ? 'bg-[#F2F4F7] border-[#EAECF0] text-[#475467]'
-        : 'bg-[#E0E8FF] border-[#ADC4FF] text-[#003d9b]';
+function KanbanColumn({ title, tasks, setTasks, color = 'outline' }) {
+  const headerClass = `bg-[#E0E8FF] border-[#ADC4FF] ${title === 'Need Revision' ? 'text-[#BA1A1A]' :
+    title === 'Done' ? 'text-[#006D3A]' :
+      title === 'Cancelled' ? 'text-[#475467]' :
+        'text-[#003d9b]'
+    }`;
 
   return (
-    <div className="kanban-column group flex flex-col bg-surface-container-low/30 border border-outline-variant/50 rounded-xl p-2 min-w-[300px] max-h-[calc(100vh-280px)]">
+    <div className="kanban-column group flex flex-col bg-surface-container-low/30 border border-outline-variant/50 rounded-xl p-2 min-w-[300px]" style={{ height: '100%', maxHeight: '100%', flex: '0 0 300px' }}>
       <div className={`flex justify-between items-center px-4 py-2 rounded-xl border-b-2 ${headerClass} mb-1`}>
         <span className="text-[11px] font-bold uppercase tracking-wider">{title}</span>
       </div>
@@ -352,11 +360,11 @@ function KanbanColumn({ title, tasks, color = 'outline' }) {
           <div
             {...provided.droppableProps}
             ref={provided.innerRef}
-            className={`space-y-3 flex-1 overflow-y-auto px-0.5 min-h-[50px] transition-colors ${snapshot.isDraggingOver ? 'bg-primary/5' : ''}`}
-            style={{ scrollbarWidth: 'thin' }}
+            className={`space-y-3 px-0.5 transition-colors ${snapshot.isDraggingOver ? 'bg-primary/5' : ''}`}
+            style={{ flex: '1 1 0', minHeight: '50px', overflowY: 'auto', overflowX: 'visible', scrollbarWidth: 'thin' }}
           >
             {tasks.map((task, index) => (
-              <TaskCard key={task.id} task={task} index={index} />
+              <TaskCard key={task.id} task={task} index={index} totalCount={tasks.length} setTasks={setTasks} />
             ))}
             {provided.placeholder}
           </div>
@@ -370,10 +378,51 @@ function KanbanColumn({ title, tasks, color = 'outline' }) {
   );
 }
 
-function TaskCard({ task, index }) {
+function TaskCard({ task, index, totalCount, setTasks }) {
   const { id, title, date, pts, priority } = task;
   const [isEditing, setIsEditing] = React.useState(false);
   const [tempPts, setTempPts] = React.useState(pts);
+  const [showMenu, setShowMenu] = React.useState(false);
+  const [showMoveSubMenu, setShowMoveSubMenu] = React.useState(false);
+  const [showStatusSubMenu, setShowStatusSubMenu] = React.useState(false);
+  const [menuPos, setMenuPos] = React.useState({ top: 0, left: 0 });
+  const btnRef = useRef(null);
+  const menuRef = useRef(null);
+
+  const statuses = ['New', 'In Progress', 'In Testing', 'Pending Review', 'Need Revision', 'Done', 'Cancelled'];
+
+  // Đóng menu khi click ra ngoài
+  useEffect(() => {
+    if (!showMenu) return;
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target) &&
+          btnRef.current && !btnRef.current.contains(e.target)) {
+        setShowMenu(false);
+        setShowMoveSubMenu(false);
+        setShowStatusSubMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showMenu]);
+
+  const handleMenuToggle = (e) => {
+    e.stopPropagation();
+    if (showMenu) {
+      setShowMenu(false);
+      setShowMoveSubMenu(false);
+      setShowStatusSubMenu(false);
+      return;
+    }
+    // Tính toán tọa độ fixed dựa trên vị trí nút ...
+    const rect = btnRef.current.getBoundingClientRect();
+    // Menu rộng 192px (w-48), ưu tiên mở sang trái nếu không đủ chỗ bên phải
+    const menuWidth = 192;
+    let left = rect.right - menuWidth;
+    if (left < 8) left = rect.left;
+    setMenuPos({ top: rect.bottom + 4, left });
+    setShowMenu(true);
+  };
 
   return (
     <Draggable draggableId={id} index={index}>
@@ -382,12 +431,102 @@ function TaskCard({ task, index }) {
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
-          style={{
-            ...provided.draggableProps.style,
-          }}
-          className={`bg-surface-container-lowest p-2.5 border border-outline-variant rounded shadow-sm hover:bg-surface-container-low transition-all group ${snapshot.isDragging ? 'shadow-xl ring-2 ring-primary/20 scale-[1.02] z-50' : ''}`}
+          style={{ ...provided.draggableProps.style }}
+          className={`relative bg-surface-container-lowest p-2.5 border border-outline-variant rounded shadow-sm hover:bg-surface-container-low transition-all group ${snapshot.isDragging ? 'shadow-xl ring-2 ring-primary/20 scale-[1.02] z-50' : ''}`}
         >
-          <div className="text-[11px] font-medium text-on-surface group-hover:text-primary mb-2 leading-snug">{title}</div>
+          <div className="flex justify-between items-start mb-2 gap-2">
+            <div className="text-[11px] font-medium text-on-surface group-hover:text-primary leading-snug flex items-center gap-1.5 flex-wrap">
+              {title}
+              <span className="material-symbols-outlined text-[14px] text-outline opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer hover:text-primary">edit</span>
+            </div>
+            <div>
+              <button
+                ref={btnRef}
+                onClick={handleMenuToggle}
+                className={`p-0.5 hover:bg-surface-container rounded cursor-pointer shrink-0 transition-opacity ${showMenu ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+              >
+                <span className="material-symbols-outlined text-[18px] text-outline">more_horiz</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Portal Menu - nổi lên trên mọi thứ với position:fixed */}
+          {showMenu && createPortal(
+            <div
+              ref={menuRef}
+              style={{ position: 'fixed', top: menuPos.top, left: menuPos.left, zIndex: 9999 }}
+              className="bg-white border border-outline-variant shadow-2xl rounded-lg py-2 w-48"
+            >
+              {/* Move work item */}
+              <div
+                className="relative"
+                onMouseEnter={() => { setShowMoveSubMenu(true); setShowStatusSubMenu(false); }}
+                onMouseLeave={() => setShowMoveSubMenu(false)}
+              >
+                <button
+                  className={`w-full flex items-center justify-between px-4 py-2.5 hover:bg-surface-container transition-colors text-[13px] text-left ${showMoveSubMenu ? 'bg-surface-container text-primary font-medium' : 'text-on-surface'}`}
+                >
+                  <span>Move work item</span>
+                  <span className="material-symbols-outlined text-[16px]">chevron_right</span>
+                </button>
+                {showMoveSubMenu && (
+                  <div
+                    className="absolute top-0 left-full ml-1 bg-white border border-outline-variant shadow-2xl rounded-lg py-2 w-[160px]"
+                    style={{ zIndex: 10000 }}
+                  >
+                    {index > 0 && (
+                      <>
+                        <button className="w-full px-4 py-2.5 hover:bg-surface-container transition-colors text-[13px] text-left text-on-surface">To the top</button>
+                        <button className="w-full px-4 py-2.5 hover:bg-surface-container transition-colors text-[13px] text-left text-on-surface">Up</button>
+                      </>
+                    )}
+                    {index < totalCount - 1 && (
+                      <>
+                        <button className="w-full px-4 py-2.5 hover:bg-surface-container transition-colors text-[13px] text-left text-on-surface">Down</button>
+                        <button className="w-full px-4 py-2.5 hover:bg-surface-container transition-colors text-[13px] text-left text-on-surface">To the bottom</button>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Change status */}
+              <div
+                className="relative"
+                onMouseEnter={() => { setShowStatusSubMenu(true); setShowMoveSubMenu(false); }}
+                onMouseLeave={() => setShowStatusSubMenu(false)}
+              >
+                <button
+                  className={`w-full flex items-center justify-between px-4 py-2.5 hover:bg-surface-container transition-colors text-[13px] text-left ${showStatusSubMenu ? 'bg-surface-container text-primary font-medium' : 'text-on-surface'}`}
+                >
+                  <span>Change status</span>
+                  <span className="material-symbols-outlined text-[16px]">chevron_right</span>
+                </button>
+                {showStatusSubMenu && (
+                  <div
+                    className="absolute top-0 left-full ml-1 bg-white border border-outline-variant shadow-2xl rounded-lg py-2 w-[160px]"
+                    style={{ zIndex: 10000 }}
+                  >
+                    {statuses.map(s => (
+                      <button
+                        key={s}
+                        onClick={() => {
+                          setTasks(prev => prev.map(t => t.id === id ? { ...t, status: s } : t));
+                          setShowMenu(false);
+                          setShowStatusSubMenu(false);
+                        }}
+                        className="w-full px-4 py-2.5 hover:bg-surface-container transition-colors text-[13px] text-left text-on-surface"
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>,
+            document.body
+          )}
+
           <div className="flex items-center gap-2 mb-4">
             <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-sm bg-surface-container text-on-surface-variant">
               <span className="material-symbols-outlined text-[14px]">calendar_month</span>
@@ -426,9 +565,11 @@ function TaskCard({ task, index }) {
             </div>
             <div className="flex items-center gap-2">
               {priority === 'High' ? (
-                <span className="material-symbols-outlined text-error text-[20px] font-bold">keyboard_double_arrow_up</span>
+                <span className="material-symbols-outlined text-[#BA1A1A] text-[20px] font-bold">keyboard_arrow_up</span>
+              ) : priority === 'Medium' ? (
+                <span className="material-symbols-outlined text-orange-500 text-[20px] font-bold">keyboard_double_arrow_up</span>
               ) : (
-                <span className="material-symbols-outlined text-orange-500 text-[20px] font-bold">keyboard_arrow_up</span>
+                <span className="material-symbols-outlined text-blue-500 text-[20px] font-bold">keyboard_arrow_down</span>
               )}
               <div className="w-6 h-6 rounded-full bg-gray-200 border border-outline-variant"></div>
             </div>
@@ -444,7 +585,7 @@ function TaskRow({ id, title, assignee, pts, status, date, priority, isSelected,
     ? 'bg-[#FFF0F0] text-[#BA1A1A]'
     : status === 'Done'
       ? 'bg-[#E6FFF0] text-[#006D3A]'
-      : status === 'Cancelled'
+      : status === 'Cancelled' || status === 'New'
         ? 'bg-[#F2F4F7] text-[#475467]'
         : 'bg-[#E0E8FF] text-[#003d9b]';
 
@@ -477,9 +618,11 @@ function TaskRow({ id, title, assignee, pts, status, date, priority, isSelected,
       </td>
       <td className="px-4 py-2 text-center">
         {priority === 'High' ? (
-          <span className="material-symbols-outlined text-error font-bold text-[16px]">keyboard_double_arrow_up</span>
+          <span className="material-symbols-outlined text-[#BA1A1A] font-bold text-[16px]">keyboard_arrow_up</span>
+        ) : priority === 'Medium' ? (
+          <span className="material-symbols-outlined text-orange-500 font-bold text-[16px]">keyboard_double_arrow_up</span>
         ) : (
-          <span className="material-symbols-outlined text-orange-500 font-bold text-[16px]">keyboard_arrow_up</span>
+          <span className="material-symbols-outlined text-blue-500 font-bold text-[16px]">keyboard_arrow_down</span>
         )}
       </td>
       <td className="px-4 py-2">
