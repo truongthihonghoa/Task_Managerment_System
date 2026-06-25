@@ -1,5 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import '../../styles/CreateTaskModal.css';
+import RichTextEditor from './RichTextEditor';
+
+// Danh sách tasks tham chiếu (đồng bộ với Task List & Board)
+const SAMPLE_TASKS = [
+  { id: 'TM-104', title: 'Infrastructure setup',            status: 'New',            priority: 'High'   },
+  { id: 'TM-301', title: 'API Documentation update',        status: 'In Progress',    priority: 'Medium' },
+  { id: 'TM-89',  title: 'Checkout flow mobile fix',        status: 'In Testing',     priority: 'High'   },
+  { id: 'TM-102', title: 'Security Protocols Audit',        status: 'Done',           priority: 'High'   },
+  { id: 'TM-212', title: 'SSO Authentication implementation', status: 'In Progress', priority: 'Medium' },
+  { id: 'TM-105', title: 'API Integration & Testing',       status: 'Pending Review', priority: 'High'   },
+  { id: 'TM-402', title: 'User Feedback UI Refactor',       status: 'Need Revision',  priority: 'Low'    },
+  { id: 'TM-505', title: 'Database Migration Script',       status: 'New',            priority: 'High'   },
+  { id: 'TM-610', title: 'Dashboard Charts optimization',   status: 'In Testing',     priority: 'Medium' },
+  { id: 'TM-701', title: 'Mobile App Performance Tuning',   status: 'In Testing',     priority: 'Medium' },
+  { id: 'TM-802', title: 'Push Notification Service',       status: 'New',            priority: 'High'   },
+];
 
 const CreateTaskModal = ({ isOpen, onClose }) => {
   const [formData, setFormData] = useState({
@@ -161,64 +177,12 @@ const CreateTaskModal = ({ isOpen, onClose }) => {
           {/* Description */}
           <div className="form-group">
             <label>Description</label>
-            <div className="description-container-fixed">
-              <div className="description-toolbar-advanced">
-                <div className="toolbar-group">
-                  <button className="toolbar-btn-advanced flex items-center gap-1">
-                    <span className="text-[15px] font-medium">Tt</span>
-                    <i data-lucide="chevron-down" className="w-3 h-3"></i>
-                  </button>
-                </div>
-                
-                <div className="toolbar-divider"></div>
-                
-                <div className="toolbar-group">
-                  <button className="toolbar-btn-advanced font-bold">B</button>
-                  <button className="toolbar-btn-advanced italic">I</button>
-                  <button className="toolbar-btn-advanced flex items-center gap-1">
-                    <span className="underline">U</span>
-                    <i data-lucide="chevron-down" className="w-3 h-3"></i>
-                  </button>
-                </div>
-
-                <div className="toolbar-divider"></div>
-
-                <div className="toolbar-group">
-                  <button className="toolbar-btn-advanced flex items-center gap-1">
-                    <span className="border-b-2 border-black leading-none">A</span>
-                    <i data-lucide="chevron-down" className="w-3 h-3"></i>
-                  </button>
-                </div>
-
-                <div className="toolbar-divider"></div>
-
-                <div className="toolbar-group">
-                  <button className="toolbar-btn-advanced flex items-center gap-1">
-                    <i data-lucide="list" className="w-4 h-4"></i>
-                    <i data-lucide="chevron-down" className="w-3 h-3"></i>
-                  </button>
-                </div>
-
-                <div className="toolbar-divider"></div>
-
-                <div className="toolbar-group flex items-center">
-                  <button className="toolbar-btn-advanced"><i data-lucide="link" className="w-4 h-4"></i></button>
-                  <button className="toolbar-btn-advanced"><i data-lucide="image" className="w-4 h-4"></i></button>
-                  <button className="toolbar-btn-advanced"><i data-lucide="smile" className="w-4 h-4"></i></button>
-                  <button className="toolbar-btn-advanced flex items-center gap-1">
-                    <i data-lucide="plus" className="w-4 h-4"></i>
-                    <i data-lucide="chevron-down" className="w-3 h-3"></i>
-                  </button>
-                </div>
-              </div>
-              <textarea 
-                className="description-textarea-advanced" 
-                placeholder="Type /ai for Atlassian Intelligence or @ to mention and notify someone."
-                value={formData.description}
-                name="description"
-                onChange={handleInputChange}
-              />
-            </div>
+            <RichTextEditor
+              value={formData.description}
+              onChange={(html) => setFormData(prev => ({ ...prev, description: html }))}
+              placeholder="Type /ai for Atlassian Intelligence or @ to mention and notify someone."
+              tasks={SAMPLE_TASKS}
+            />
           </div>
 
           {/* Assignee */}
