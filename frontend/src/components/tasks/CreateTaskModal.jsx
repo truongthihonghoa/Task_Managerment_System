@@ -25,8 +25,9 @@ const CreateTaskModal = ({ isOpen, onClose }) => {
     description: '',
     assignee: 'Alex Morgan', // Mặc định là user hiện tại hoặc Automatic
     priority: 'Medium',
-    startDate: '',
-    dueDate: '',
+    createdAt: '',
+    completed_at: '',
+    updated_at: '',
     sprint: '',
     storyPoints: '',
     comment: '',
@@ -36,8 +37,9 @@ const CreateTaskModal = ({ isOpen, onClose }) => {
   const [errors, setErrors] = useState({});
   const [isStatusOpen, setIsStatusOpen] = useState(false);
   const [isPriorityOpen, setIsPriorityOpen] = useState(false);
-  const [isStartDateOpen, setIsStartDateOpen] = useState(false);
-  const [isDueDateOpen, setIsDueDateOpen] = useState(false);
+  const [isCreatedAtOpen, setIsCreatedAtOpen] = useState(false);
+  const [isCompletedAtOpen, setIsCompletedAtOpen] = useState(false);
+  const [isUpdatedAtOpen, setIsUpdatedAtOpen] = useState(false);
   const [isSprintOpen, setIsSprintOpen] = useState(false);
   const [onlyShowCurrentSpace, setOnlyShowCurrentSpace] = useState(true);
 
@@ -45,7 +47,7 @@ const CreateTaskModal = ({ isOpen, onClose }) => {
     if (isOpen && window.lucide) {
       window.lucide.createIcons();
     }
-  }, [isOpen, isStatusOpen, isPriorityOpen, isStartDateOpen, isDueDateOpen, isSprintOpen, onlyShowCurrentSpace]);
+  }, [isOpen, isStatusOpen, isPriorityOpen, isCreatedAtOpen, isCompletedAtOpen, isUpdatedAtOpen, isSprintOpen, onlyShowCurrentSpace]);
 
   if (!isOpen) return null;
 
@@ -241,75 +243,131 @@ const CreateTaskModal = ({ isOpen, onClose }) => {
           </div>
 
           <div className="grid-2">
-            {/* Start Date */}
-            <div className="form-group">
-              <label>Start date</label>
-              <div className="relative">
-                <div 
-                  className="date-custom-trigger"
-                  onClick={() => setIsStartDateOpen(!isStartDateOpen)}
-                >
-                  <span className={formData.startDate ? 'text-on-surface' : 'text-gray-400'}>
-                    {formData.startDate || 'Select date'}
-                  </span>
-                  <i data-lucide="calendar" className="w-4 h-4 text-gray-500"></i>
-                </div>
-                <p className="text-[11px] text-gray-400 mt-1 ml-1 leading-tight">Allows the planned start date for a piece of work to be set.</p>
-                {isStartDateOpen && (
-                  <div className="calendar-dropdown-container">
-                    <div className="calendar-header">
-                      <div className="flex gap-2">
-                        <i data-lucide="chevrons-left" className="w-4 h-4 cursor-pointer hover:text-primary"></i>
-                        <i data-lucide="chevron-left" className="w-4 h-4 cursor-pointer hover:text-primary"></i>
-                      </div>
-                      <span className="font-bold text-sm">June 2026</span>
-                      <div className="flex gap-2">
-                        <i data-lucide="chevron-right" className="w-4 h-4 cursor-pointer hover:text-primary"></i>
-                        <i data-lucide="chevrons-right" className="w-4 h-4 cursor-pointer hover:text-primary"></i>
-                      </div>
-                    </div>
-                    <div className="calendar-body">
-                      <div className="grid grid-cols-7 text-[11px] font-bold text-gray-500 mb-2">
-                        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => <div key={d} className="text-center">{d}</div>)}
-                      </div>
-                      <div className="grid grid-cols-7 gap-1">
-                        {Array.from({ length: 30 }).map((_, i) => {
-                          const day = i + 1;
-                          const isSelected = day === 25;
-                          return (
-                            <div 
-                              key={i} 
-                              className={`calendar-day ${isSelected ? 'selected-day' : ''}`}
-                              onClick={() => {
-                                setFormData(prev => ({ ...prev, startDate: `2026-06-${day.toString().padStart(2, '0')}` }));
-                                setIsStartDateOpen(false);
-                              }}
-                            >
-                              {day}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
+            <div className="flex flex-col gap-4">
+              {/* Created At (formerly Start Date) */}
+              <div className="form-group mb-0!">
+                <label>Created At</label>
+                <div className="relative">
+                  <div 
+                    className="date-custom-trigger"
+                    onClick={() => setIsCreatedAtOpen(!isCreatedAtOpen)}
+                  >
+                    <span className={formData.createdAt ? 'text-on-surface' : 'text-gray-400'}>
+                      {formData.createdAt || 'Select date'}
+                    </span>
+                    <i data-lucide="calendar" className="w-4 h-4 text-gray-500"></i>
                   </div>
-                )}
+                  <p className="text-[11px] text-gray-400 mt-1 ml-1 leading-tight">Allows the creation date for a piece of work to be set.</p>
+                  {isCreatedAtOpen && (
+                    <div className="calendar-dropdown-container">
+                      <div className="calendar-header">
+                        <div className="flex gap-2">
+                          <i data-lucide="chevrons-left" className="w-4 h-4 cursor-pointer hover:text-primary"></i>
+                          <i data-lucide="chevron-left" className="w-4 h-4 cursor-pointer hover:text-primary"></i>
+                        </div>
+                        <span className="font-bold text-sm">June 2026</span>
+                        <div className="flex gap-2">
+                          <i data-lucide="chevron-right" className="w-4 h-4 cursor-pointer hover:text-primary"></i>
+                          <i data-lucide="chevrons-right" className="w-4 h-4 cursor-pointer hover:text-primary"></i>
+                        </div>
+                      </div>
+                      <div className="calendar-body">
+                        <div className="grid grid-cols-7 text-[11px] font-bold text-gray-500 mb-2">
+                          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => <div key={d} className="text-center">{d}</div>)}
+                        </div>
+                        <div className="grid grid-cols-7 gap-1">
+                          {Array.from({ length: 30 }).map((_, i) => {
+                            const day = i + 1;
+                            const isSelected = day === 25;
+                            return (
+                              <div 
+                                key={i} 
+                                className={`calendar-day ${isSelected ? 'selected-day' : ''}`}
+                                onClick={() => {
+                                  setFormData(prev => ({ ...prev, createdAt: `2026-06-${day.toString().padStart(2, '0')}` }));
+                                  setIsCreatedAtOpen(false);
+                                }}
+                              >
+                                {day}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* updated_at */}
+              <div className="form-group mb-0!">
+                <label>updated_at</label>
+                <div className="relative">
+                  <div 
+                    className="date-custom-trigger"
+                    onClick={() => setIsUpdatedAtOpen(!isUpdatedAtOpen)}
+                  >
+                    <span className={formData.updated_at ? 'text-on-surface' : 'text-gray-400'}>
+                      {formData.updated_at || 'Select date'}
+                    </span>
+                    <i data-lucide="calendar" className="w-4 h-4 text-gray-500"></i>
+                  </div>
+                  {isUpdatedAtOpen && (
+                    <div className="calendar-dropdown-container">
+                      <div className="calendar-header">
+                        <div className="flex gap-2">
+                          <i data-lucide="chevrons-left" className="w-4 h-4 cursor-pointer hover:text-primary"></i>
+                          <i data-lucide="chevron-left" className="w-4 h-4 cursor-pointer hover:text-primary"></i>
+                        </div>
+                        <span className="font-bold text-sm">June 2026</span>
+                        <div className="flex gap-2">
+                          <i data-lucide="chevron-right" className="w-4 h-4 cursor-pointer hover:text-primary"></i>
+                          <i data-lucide="chevrons-right" className="w-4 h-4 cursor-pointer hover:text-primary"></i>
+                        </div>
+                      </div>
+                      <div className="calendar-body">
+                        <div className="grid grid-cols-7 text-[11px] font-bold text-gray-500 mb-2">
+                          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => <div key={d} className="text-center">{d}</div>)}
+                        </div>
+                        <div className="grid grid-cols-7 gap-1">
+                          {Array.from({ length: 30 }).map((_, i) => {
+                            const day = i + 1;
+                            const isSelected = day === 25;
+                            return (
+                              <div 
+                                key={i} 
+                                className={`calendar-day ${isSelected ? 'selected-day' : ''}`}
+                                onClick={() => {
+                                  setFormData(prev => ({ ...prev, updated_at: `2026-06-${day.toString().padStart(2, '0')}` }));
+                                  setIsUpdatedAtOpen(false);
+                                }}
+                              >
+                                {day}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
-            {/* Due Date */}
-            <div className="form-group">
-              <label>Due date</label>
+            {/* Completed_at (formerly Due Date) */}
+            <div className="form-group self-start">
+              <label>Completed_at</label>
               <div className="relative">
                 <div 
                   className="date-custom-trigger"
-                  onClick={() => setIsDueDateOpen(!isDueDateOpen)}
+                  onClick={() => setIsCompletedAtOpen(!isCompletedAtOpen)}
                 >
-                  <span className={formData.dueDate ? 'text-on-surface' : 'text-gray-400'}>
-                    {formData.dueDate || 'Select date'}
+                  <span className={formData.completed_at ? 'text-on-surface' : 'text-gray-400'}>
+                    {formData.completed_at || 'Select date'}
                   </span>
                   <i data-lucide="calendar" className="w-4 h-4 text-gray-500"></i>
                 </div>
-                {isDueDateOpen && (
+                {isCompletedAtOpen && (
                   <div className="calendar-dropdown-container">
                     <div className="calendar-header">
                       <div className="flex gap-2">
@@ -335,8 +393,8 @@ const CreateTaskModal = ({ isOpen, onClose }) => {
                               key={i} 
                               className={`calendar-day ${isSelected ? 'selected-day' : ''}`}
                               onClick={() => {
-                                setFormData(prev => ({ ...prev, dueDate: `2026-06-${day.toString().padStart(2, '0')}` }));
-                                setIsDueDateOpen(false);
+                                setFormData(prev => ({ ...prev, completed_at: `2026-06-${day.toString().padStart(2, '0')}` }));
+                                setIsCompletedAtOpen(false);
                               }}
                             >
                               {day}

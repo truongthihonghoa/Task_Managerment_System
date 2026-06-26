@@ -306,7 +306,7 @@ export default function TaskManagement() {
                       <th className="px-6 py-3 font-bold">Assignee</th>
                       <th className="px-6 py-3 font-bold text-center">Priority</th>
                       <th className="px-6 py-3 font-bold">Status</th>
-                      <th className="px-6 py-3 font-bold">Due Date</th>
+                      <th className="px-6 py-3 font-bold">Completed_at</th>
                       <th className="px-6 py-3 font-bold text-center">Actions</th>
                     </tr>
                   </thead>
