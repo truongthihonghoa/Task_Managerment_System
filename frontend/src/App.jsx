@@ -6,44 +6,40 @@ import {
     Navigate
 } from "react-router-dom";
 
-
 import LoginPage from "./pages/LoginPage";
-import MainLayout from "./components/layout/MainLayout";
+import RegisterPage from "./pages/RegisterPage";
+import ForgotPassword from "./pages/ForgotPassword";
+import VerifyEmail from "./pages/VerifyEmail";
+import ResetPassword from "./pages/ResetPassword";
 
+import MainLayout from "./components/layout/MainLayout";
+import SpaceManagement from "./pages/SpaceManagement";
+import TaskManagement from "./pages/TaskManagement";
+import Dashboard from "./pages/Dashboard";
 
 export default function App() {
-
     return (
-
         <BrowserRouter>
-
             <Routes>
 
-                {/* Mở web là vào Login */}
-                <Route 
-                    path="/" 
-                    element={<LoginPage />}
-                />
+                {/* Authentication */}
+                <Route path="/" element={<LoginPage />} />
+                <Route path="/register" element={<RegisterPage />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/verify-email" element={<VerifyEmail />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
 
+                {/* Dashboard */}
+                <Route path="/dashboard" element={<MainLayout />}>
+                    <Route index element={<Dashboard />} />
+                    <Route path="spaces" element={<SpaceManagement />} />
+                    <Route path="tasks/:spaceId" element={<TaskManagement />} />
+                </Route>
 
-                {/* Main Layout */}
-                <Route 
-                    path="/mainlayout" 
-                    element={<MainLayout />}
-                />
-
-
-                {/* Không tìm thấy route */}
-                <Route
-                    path="*"
-                    element={<Navigate to="/" replace />}
-                />
-
+                {/* Redirect */}
+                <Route path="*" element={<Navigate to="/" replace />} />
 
             </Routes>
-
         </BrowserRouter>
-
     );
-
 }
