@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import taskflowLogo from '../assets/taskflow-logo.png';
-import { useNavigate } from 'react-router-dom'; // 1. Khai báo import điều hướng
+import { Link, useNavigate } from 'react-router-dom';
 
 export default function LoginPage() {
-    // State quản lý form và UI
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -12,9 +11,8 @@ export default function LoginPage() {
     const [isRedirecting, setIsRedirecting] = useState(false);
     const [emailError, setEmailError] = useState(false);
 
-    const navigate = useNavigate(); // 2. Khởi tạo hook điều hướng trong Component
+    const navigate = useNavigate();
 
-    // Theo dõi và đồng bộ hóa class 'dark' trên thẻ html
     useEffect(() => {
         if (isDark) {
             document.documentElement.classList.add('dark');
@@ -23,7 +21,6 @@ export default function LoginPage() {
         }
     }, [isDark]);
 
-    // Kiểm tra lỗi email trực tiếp khi gõ
     const handleEmailChange = (e) => {
         const value = e.target.value;
         setEmail(value);
@@ -32,7 +29,6 @@ export default function LoginPage() {
         }
     };
 
-    // Xử lý sự kiện Submit Form
     const handleLogin = (e) => {
         e.preventDefault();
 
@@ -43,19 +39,15 @@ export default function LoginPage() {
 
         setIsLoading(true);
 
-        // Giả lập hiệu ứng xoay nạp dữ liệu trong 2 giây
         setTimeout(() => {
             setIsLoading(false);
             setIsRedirecting(true);
 
-            // Giả lập trạng thái chuyển hướng hệ thống trong 1 giây tiếp theo
             setTimeout(() => {
                 setIsRedirecting(false);
                 setEmail('');
                 setPassword('');
-                
-                // 3. QUAN TRỌNG NHẤT: Kích hoạt lệnh chuyển hướng sang trang khung Dashboard chung
-                navigate('/dashboard'); 
+                navigate('/dashboard');
             }, 1000);
         }, 2000);
     };
@@ -75,13 +67,13 @@ export default function LoginPage() {
             </button>
 
             <main className="w-full max-w-[440px]">
-                {/* Thẻ Login Card */}
+                {/* Login Card */}
                 <div className="bg-surface-container-lowest dark:bg-on-surface/10 backdrop-blur-xl border border-outline-variant/30 dark:border-outline/20 rounded-xl shadow-sm p-8 md:p-12 flex flex-col gap-6">
 
-                    {/* Phần Logo & Tiêu đề */}
+                    {/* Logo & Title */}
                     <div className="flex flex-col items-center gap-4 text-center">
                         <div className="w-16 h-16 bg-primary-container/10 rounded-xl flex items-center justify-center mb-1 border-[5px] border-[#2D1B4E] overflow-hidden">
-                            <img alt="TaskMaster Logo" className="w-[86px] h-[86px] max-w-none object-contain scale-[1.35]" src={taskflowLogo}/>
+                            <img alt="TaskMaster Logo" className="w-[86px] h-[86px] max-w-none object-contain scale-[1.35]" src={taskflowLogo} />
                         </div>
                         <div className="space-y-1">
                             <h1 className="text-[24px] leading-[32px] font-semibold tracking-[-0.01em] text-on-surface dark:text-inverse-on-surface">
@@ -93,10 +85,10 @@ export default function LoginPage() {
                         </div>
                     </div>
 
-                    {/* Khu vực Form */}
+                    {/* Form */}
                     <form className="flex flex-col gap-6" onSubmit={handleLogin}>
 
-                        {/* Ô nhập Email */}
+                        {/* Email */}
                         <div className="flex flex-col gap-[9px]">
                             <label className="text-[12px] leading-[16px] tracking-[0.05em] font-medium text-on-surface-variant dark:text-surface-variant" htmlFor="email">
                                 Email Address
@@ -116,8 +108,6 @@ export default function LoginPage() {
                                     ${emailError ? 'border-error dark:border-error-container' : 'border-outline-variant dark:border-outline/30'}`}
                                 />
                             </div>
-
-                            {/* Trạng thái lỗi Validation */}
                             {emailError && (
                                 <div className="flex items-center gap-1 mt-1 text-error dark:text-error-container">
                                     <span className="material-symbols-outlined text-[16px]">error</span>
@@ -126,7 +116,7 @@ export default function LoginPage() {
                             )}
                         </div>
 
-                        {/* Ô nhập Mật khẩu */}
+                        {/* Password */}
                         <div className="flex flex-col gap-[9px]">
                             <label className="text-[12px] leading-[16px] tracking-[0.05em] font-medium text-on-surface-variant dark:text-surface-variant" htmlFor="password">
                                 Password
@@ -156,7 +146,7 @@ export default function LoginPage() {
                             </div>
                         </div>
 
-                        {/* Ghi nhớ đăng nhập & Quên mật khẩu */}
+                        {/* Remember Me & Forgot Password */}
                         <div className="flex items-center justify-between">
                             <label className="flex items-center gap-2 cursor-pointer group">
                                 <input
@@ -167,12 +157,16 @@ export default function LoginPage() {
                                     Remember Me
                                 </span>
                             </label>
-                            <a className="text-[12px] leading-[16px] font-medium tracking-[0.05em] text-[#2D1B4E] dark:text-[#2D1B4E]/80 hover:underline underline-offset-4" href="#forgot">
+                            <Link
+                                className="text-[12px] leading-[16px] font-medium tracking-[0.05em] text-[#2D1B4E] dark:text-[#2D1B4E]/80 hover:underline underline-offset-4"
+                                to="/forgot-password"
+                                state={{ flow: 'forgot' }}
+                            >
                                 Forgot Password?
-                            </a>
+                            </Link>
                         </div>
 
-                        {/* Nút Đăng nhập / Gửi */}
+                        {/* Login Button */}
                         <button
                             type="submit"
                             disabled={isLoading || isRedirecting}
@@ -182,7 +176,6 @@ export default function LoginPage() {
                             <span className={isLoading ? 'opacity-50' : ''}>
                                 {isRedirecting ? 'Redirecting...' : 'Login'}
                             </span>
-
                             {isLoading && (
                                 <div className="border-2 border-white/30 rounded-full border-top-2 border-t-white w-4 h-4 animate-spin"></div>
                             )}
@@ -196,6 +189,7 @@ export default function LoginPage() {
                             <div className="h-px flex-1 bg-outline-variant/60 dark:bg-outline/30"></div>
                         </div>
 
+                        {/* Google Button */}
                         <button
                             type="button"
                             className="w-full min-h-[56px] rounded-lg border border-outline-variant dark:border-outline/30 bg-surface-container-lowest dark:bg-on-surface/5 text-on-surface dark:text-inverse-on-surface text-[14px] leading-[20px] font-semibold flex items-center justify-center gap-4 hover:bg-surface-container-low dark:hover:bg-on-surface/10 active:scale-[0.98] transition-all duration-200 shadow-sm"
@@ -210,18 +204,20 @@ export default function LoginPage() {
                         </button>
                     </form>
 
-                    {/* Phần chân trang (Đăng ký) */}
+                    {/* Register Link */}
                     <div className="pt-6 border-t border-outline-variant/30 dark:border-outline/20 text-center">
                         <p className="text-[14px] leading-[20px] font-normal text-on-surface-variant dark:text-surface-variant">
                             Don't have an account?{' '}
-                            <a className="text-[#2D1B4E] dark:text-[#2D1B4E]/80 font-bold hover:underline underline-offset-4" href="#register">
+                            <Link
+                                className="text-[#2D1B4E] dark:text-[#2D1B4E]/80 font-bold hover:underline underline-offset-4"
+                                to="/forgot-password"
+                                state={{ flow: 'register' }}
+                            >
                                 Register
-                            </a>
+                            </Link>
                         </p>
                     </div>
                 </div>
-                {}
-
             </main>
         </div>
     );
