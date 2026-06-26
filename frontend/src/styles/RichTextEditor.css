@@ -1,0 +1,864 @@
+/* ═══════════════════════════════════════════════
+   RichTextEditor – Atlassian-style editor styles
+   ═══════════════════════════════════════════════ */
+
+.rte-root {
+  position: relative;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  /* Do NOT set overflow here — portals render outside this element */
+}
+
+/* ── Toolbar ─────────────────────────────────── */
+.rte-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 2px;
+  padding: 6px 10px;
+  border-bottom: 1px solid #DFE1E6;
+  background: #fff;
+  user-select: none;
+}
+
+.rte-tt-btn {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+}
+
+.rte-format-btn {
+  min-width: 28px;
+  height: 28px;
+}
+
+.rte-format-btn.rte-active {
+  background-color: #E0E8FF !important;
+  color: #0052CC !important;
+  border-radius: 3px;
+}
+
+/* Color button */
+.rte-color-btn {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.rte-color-a-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+}
+
+.rte-color-bar {
+  display: block;
+  width: 14px;
+  height: 3px;
+  border-radius: 1px;
+  margin-top: 2px;
+  transition: background 0.2s;
+}
+
+.rte-mention-trigger {
+  min-width: 24px;
+  height: 28px;
+}
+
+/* ── Dropdown Panel ───────────────────────────── */
+/* position:fixed + top/left are injected inline by PortalDropdown */
+.rte-dropdown-panel {
+  min-width: 160px;
+  background: #fff;
+  border: 1px solid #DFE1E6;
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(9, 30, 66, 0.18), 0 0 0 1px rgba(9,30,66,0.06);
+  z-index: 99999;
+  padding: 4px 0;
+  animation: rteDropIn 0.12s ease-out;
+}
+
+@keyframes rteDropIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.rte-dropdown-item {
+  padding: 7px 14px;
+  font-size: 13px;
+  color: #172B4D;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.rte-dropdown-item:hover {
+  background-color: #F4F5F7;
+}
+
+.rte-menu-icon {
+  display: inline-block;
+  min-width: 18px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: #6B778C;
+}
+
+/* ── Color Panel ─────────────────────────────── */
+.rte-color-panel {
+  min-width: 160px;
+  padding: 12px;
+}
+
+.rte-color-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6B778C;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+  padding: 0 2px;
+}
+
+.rte-color-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.rte-color-swatch {
+  width: 26px;
+  height: 26px;
+  border-radius: 4px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s;
+}
+
+.rte-color-swatch:hover {
+  transform: scale(1.15);
+  border-color: rgba(0,0,0,0.25);
+}
+
+/* ── Emoji Panel ─────────────────────────────── */
+.rte-emoji-panel {
+  min-width: 200px;
+  padding: 8px;
+}
+
+.rte-emoji-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 4px;
+}
+
+.rte-emoji-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background 0.15s;
+  line-height: 1;
+}
+
+.rte-emoji-btn:hover {
+  background-color: #F4F5F7;
+}
+
+/* ── Plus / Insert Panel ─────────────────────── */
+.rte-plus-panel {
+  min-width: 190px;
+}
+
+.rte-plus-section-title {
+  font-size: 10px;
+  font-weight: 700;
+  color: #6B778C;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 6px 14px 2px;
+}
+
+.rte-plus-icon {
+  font-size: 14px;
+  min-width: 20px;
+  text-align: center;
+}
+
+/* ── Dialogs ─────────────────────────────────── */
+.rte-dialog-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(9, 30, 66, 0.45);
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(2px);
+}
+
+.rte-dialog {
+  background: #fff;
+  border-radius: 8px;
+  padding: 24px;
+  width: 360px;
+  box-shadow: 0 8px 32px rgba(9, 30, 66, 0.25);
+  animation: rteDropIn 0.15s ease-out;
+}
+
+.rte-dialog-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #172B4D;
+  margin-bottom: 16px;
+}
+
+.rte-dialog-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #5E6C84;
+  margin-bottom: 4px;
+  margin-top: 12px;
+}
+
+.rte-dialog-label:first-of-type {
+  margin-top: 0;
+}
+
+.rte-dialog-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 2px solid #DFE1E6;
+  border-radius: 3px;
+  font-size: 14px;
+  color: #172B4D;
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.rte-dialog-input:focus {
+  border-color: #4C2B74;
+}
+
+/* ── Image Dialog Tabs & Content ──────────────── */
+.rte-image-dialog {
+  background: #fff;
+  border-radius: 8px;
+  width: 440px;
+  max-width: 95vw;
+  box-shadow: 0 16px 48px rgba(9, 30, 66, 0.28);
+  animation: rteDropIn 0.15s ease-out;
+  overflow: hidden;
+  padding: 0; /* Override default dialog padding */
+}
+
+.rte-image-dialog-tabs {
+  display: flex;
+  padding: 12px 20px 0;
+  border-bottom: 1px solid #EBECF0;
+  gap: 20px;
+}
+
+.rte-image-tab {
+  padding: 8px 4px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6B778C;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.2s;
+}
+
+.rte-image-tab:hover {
+  color: #172B4D;
+}
+
+.rte-image-tab.active {
+  color: #4C2B74;
+}
+
+.rte-image-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: #4C2B74;
+}
+
+.rte-image-content {
+  padding: 24px;
+}
+
+.rte-upload-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #DFE1E6;
+  border-radius: 4px;
+  min-height: 120px;
+  background-color: #fff;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.rte-upload-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 10px 24px;
+  border: 1px solid #DFE1E6;
+  border-radius: 4px;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  color: #42526E;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.rte-upload-btn:hover {
+  background: #F4F5F7;
+  border-color: #C1C7D0;
+}
+
+.rte-upload-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #5E6C84;
+}
+
+.rte-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.rte-dialog-cancel {
+  background: none;
+  border: none;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #42526E;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: background 0.2s;
+}
+
+.rte-dialog-cancel:hover {
+  background-color: #EBECF0;
+}
+
+.rte-dialog-save {
+  background-color: #4C2B74;
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.rte-dialog-save:hover {
+  background-color: #3D225E;
+}
+
+/* ── Mention Dropdown ────────────────────────── */
+/* position:fixed + top/left are injected inline by MentionPortal */
+.rte-mention-dropdown {
+  min-width: 230px;
+  background: #fff;
+  border: 1px solid #DFE1E6;
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(9, 30, 66, 0.18), 0 0 0 1px rgba(9,30,66,0.06);
+  z-index: 99999;
+  padding: 4px 0;
+  animation: rteDropIn 0.12s ease-out;
+}
+
+.rte-mention-title {
+  font-size: 10px;
+  font-weight: 700;
+  color: #6B778C;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 6px 14px 4px;
+}
+
+.rte-mention-empty {
+  font-size: 13px;
+  color: #6B778C;
+  padding: 8px 14px;
+}
+
+.rte-mention-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #172B4D;
+  transition: background 0.15s;
+}
+
+.rte-mention-item:hover {
+  background-color: #F4F5F7;
+}
+
+.rte-mention-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+/* ── Editor area ─────────────────────────────── */
+.rte-editor-wrap {
+  position: relative;
+}
+
+.rte-editor {
+  min-height: 120px;
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 12px 16px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #172B4D;
+  outline: none;
+  cursor: text;
+  background: #fff;
+}
+
+.rte-editor:empty::before {
+  content: attr(data-placeholder);
+  color: #8993A4;
+  font-size: 13px;
+  pointer-events: none;
+}
+
+/* ── Content styles rendered inside the editor ─ */
+.rte-editor a,
+.rte-link {
+  color: #0052CC;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.rte-editor img,
+.rte-image {
+  max-width: 100%;
+  border-radius: 4px;
+  margin: 8px 0;
+  display: block;
+  border: 1px solid #DFE1E6;
+}
+
+.rte-editor blockquote {
+  border-left: 3px solid #4C2B74;
+  margin: 8px 0;
+  padding: 6px 12px;
+  background-color: #F8F8FF;
+  color: #42526E;
+  border-radius: 0 4px 4px 0;
+  font-style: italic;
+}
+
+.rte-editor pre,
+.rte-code-block {
+  background-color: #1C2333;
+  color: #A9C4EF;
+  font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+  font-size: 13px;
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin: 8px 0;
+  overflow-x: auto;
+  line-height: 1.6;
+}
+
+.rte-editor h1 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #172B4D;
+  margin: 12px 0 4px;
+  line-height: 1.3;
+}
+.rte-editor h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #172B4D;
+  margin: 10px 0 4px;
+}
+.rte-editor h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #172B4D;
+  margin: 8px 0 4px;
+}
+
+.rte-editor ul {
+  padding-left: 20px;
+  margin: 6px 0;
+}
+.rte-editor ol {
+  padding-left: 20px;
+  margin: 6px 0;
+}
+
+/* @Mention chip */
+.rte-mention {
+  display: inline;
+  padding: 1px 6px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: default;
+}
+
+/* Table */
+.rte-table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 8px 0;
+  font-size: 13px;
+}
+
+.rte-table th,
+.rte-table td {
+  border: 1px solid #DFE1E6;
+  padding: 8px 12px;
+  text-align: left;
+  color: #172B4D;
+}
+
+.rte-table th {
+  background-color: #F4F5F7;
+  font-weight: 600;
+  color: #42526E;
+}
+
+.rte-table tr:nth-child(even) td {
+  background-color: #FAFBFC;
+}
+
+/* Panels */
+.rte-panel {
+  display: flex;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin: 8px 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.rte-panel-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.rte-panel-content {
+  flex: 1;
+}
+
+.rte-panel-content p {
+  margin: 0;
+}
+
+.rte-panel-info    { background: #DEEBFF; border-left: 4px solid #0052CC; }
+.rte-panel-success { background: #E3FCEF; border-left: 4px solid #00875A; }
+.rte-panel-warning { background: #FFFAE6; border-left: 4px solid #FF8B00; }
+.rte-panel-error   { background: #FFEBE6; border-left: 4px solid #DE350B; }
+
+/* Scrollbar inside editor */
+.rte-editor::-webkit-scrollbar { width: 6px; }
+.rte-editor::-webkit-scrollbar-track { background: transparent; }
+.rte-editor::-webkit-scrollbar-thumb { background: #C1C7D0; border-radius: 3px; }
+
+/* ── Link Dialog nâng cấp ─────────────────────── */
+.rte-link-dialog {
+  background: #fff;
+  border-radius: 10px;
+  width: 480px;
+  max-width: 95vw;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 16px 48px rgba(9, 30, 66, 0.28), 0 0 0 1px rgba(9,30,66,0.06);
+  animation: rteDropIn 0.15s ease-out;
+  overflow: hidden;
+}
+
+.rte-link-dialog-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 18px 14px;
+  border-bottom: 1px solid #EBECF0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #172B4D;
+  flex-shrink: 0;
+}
+
+.rte-link-close-btn {
+  margin-left: auto;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+.rte-link-close-btn:hover { background: #EBECF0; }
+
+.rte-link-url-section {
+  padding: 14px 18px 0;
+  flex-shrink: 0;
+}
+
+.rte-link-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #5E6C84;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 6px;
+}
+
+.rte-link-search-wrap {
+  display: flex;
+  align-items: center;
+  border: 2px solid #DFE1E6;
+  border-radius: 4px;
+  background: #FAFBFC;
+  transition: border-color 0.2s;
+  min-height: 38px;
+  padding: 0 10px;
+  gap: 8px;
+}
+.rte-link-search-wrap:focus-within {
+  border-color: #4C2B74;
+  background: #fff;
+}
+.rte-link-search-wrap.has-task {
+  background: #F0EDFF;
+  border-color: #B8ACE0;
+}
+
+.rte-link-search-icon {
+  flex-shrink: 0;
+  opacity: 0.6;
+}
+
+.rte-link-search-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  color: #172B4D;
+  outline: none;
+  padding: 8px 0;
+}
+.rte-link-search-input::placeholder { color: #8993A4; }
+
+.rte-link-display-input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 2px solid #DFE1E6;
+  border-radius: 4px;
+  font-size: 13px;
+  color: #172B4D;
+  outline: none;
+  background: #FAFBFC;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+.rte-link-display-input:focus {
+  border-color: #4C2B74;
+  background: #fff;
+}
+.rte-link-display-input::placeholder { color: #8993A4; }
+
+/* Task đã chọn hiện trong ô URL */
+.rte-link-selected-task {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+.rte-link-task-id-badge {
+  background: #4C2B74;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 20px;
+  flex-shrink: 0;
+  letter-spacing: 0.3px;
+}
+.rte-link-selected-title {
+  font-size: 13px;
+  color: #172B4D;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+.rte-link-clear-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  color: #6B778C;
+  padding: 0 2px;
+  transition: color 0.15s;
+  flex-shrink: 0;
+}
+.rte-link-clear-btn:hover { color: #DE350B; }
+
+/* Body chứa danh sách task */
+.rte-link-task-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0 4px;
+  scrollbar-width: thin;
+}
+.rte-link-task-body::-webkit-scrollbar { width: 5px; }
+.rte-link-task-body::-webkit-scrollbar-thumb { background: #DFE1E6; border-radius: 3px; }
+
+.rte-link-section-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #6B778C;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 6px 18px 4px;
+}
+.rte-link-section-icon { font-size: 12px; }
+
+.rte-link-task-list {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Mỗi dòng task */
+.rte-task-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 18px;
+  cursor: pointer;
+  transition: background 0.12s;
+  border-left: 3px solid transparent;
+}
+.rte-task-item:hover {
+  background: #F4F5F7;
+  border-left-color: #DFE1E6;
+}
+.rte-task-item.selected {
+  background: #EAE6FF;
+  border-left-color: #4C2B74;
+}
+
+.rte-task-item-id {
+  font-size: 10px;
+  font-weight: 700;
+  color: #5E6C84;
+  background: #EBECF0;
+  padding: 1px 6px;
+  border-radius: 20px;
+  flex-shrink: 0;
+  letter-spacing: 0.2px;
+}
+
+.rte-task-item-title {
+  font-size: 13px;
+  color: #172B4D;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rte-task-item-status {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 20px;
+  flex-shrink: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+/* Empty state */
+.rte-link-empty {
+  font-size: 12px;
+  color: #8993A4;
+  text-align: center;
+  padding: 16px 18px;
+  font-style: italic;
+}
+
+
+/* Link task nội bộ chèn vào editor */
+.rte-task-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #EAE6FF;
+  color: #4C2B74;
+  border: 1px solid #C0B6E8;
+  border-radius: 20px;
+  padding: 1px 10px 1px 7px;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  vertical-align: middle;
+}
+.rte-task-link::before {
+  content: '🔗';
+  font-size: 10px;
+}
+.rte-task-link:hover {
+  background: #D4C9FF;
+  border-color: #9B8EC4;
+}
