@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 
 
 const userActivities = [
@@ -382,6 +382,7 @@ const ActivityItem = ({ activity, isCompact = true }) => (
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const [hoveredSegment, setHoveredSegment] = useState(null);
   const [isActivityModalOpen, setIsActivityModalOpen] = useState(false);
@@ -728,7 +729,7 @@ const Dashboard = () => {
             <div className="mb-6">
               <div className="flex items-center justify-between">
                 <h4 className="text-lg font-bold text-[#170338]">Status Overview</h4>
-                <Link to="/mainlayout/tasks?view=board" className="text-[#170338] text-xs font-bold hover:underline">View all</Link>
+                <Link to={`/dashboard/spaces${location.search}`} className="text-[#170338] text-xs font-bold hover:underline">View all</Link>
               </div>
               <p className="text-[#5e636e] text-sm mt-1">Snapshot of your work item statuses.</p>
             </div>
@@ -1352,7 +1353,7 @@ const Dashboard = () => {
                   {isAdmin ? (
                     <div className="divide-y divide-gray-50">
                       <div className="px-8 py-3 bg-gray-50/50">
-                        <p className="text-[10px] font-black text-[#8c8c8c] uppercase tracking-widest">TASK ASSIGNMENT HISTORY)</p>
+                        <p className="text-[10px] font-black text-[#8c8c8c] uppercase tracking-widest">TASK ASSIGNMENT HISTORY</p>
                       </div>
 
                       {filteredAssigned.map((task, idx) => (
