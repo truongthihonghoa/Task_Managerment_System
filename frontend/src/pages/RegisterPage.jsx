@@ -101,7 +101,7 @@ export default function CompleteAccount() {
 
   // GIAO DIỆN CHÍNH (Đã đồng bộ hóa chiều ngang max-w-[500px] và màu nền trơn)
   return (
-    <div className="bg-[#faf8ff] text-[#191b23] min-h-screen flex flex-col font-sans">
+    <div className="bg-surface text-[#191b23] min-h-screen flex flex-col font-sans">
       <main className="flex-grow px-6 pt-8 pb-24 mt-0">
         <div className="w-full max-w-[500px] mx-auto bg-white border border-[#c3c6d7] shadow-[0px_4px_6px_-1px_rgba(0,0,0,0.1),0px_2px_4px_-2px_rgba(0,0,0,0.05)] rounded-[20px] overflow-hidden">
           <div className="p-8 space-y-8">
