@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-
+import CreateSpaceModal from '../components/tasks/CreateSpaceModal';
+ 
 const SpaceManagement = () => {
   const navigate = useNavigate();
   const location = useLocation();

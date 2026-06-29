@@ -38,11 +38,12 @@ export default function App() {
                 <Route path="/dashboard/*" element={<MainLayout />}>
                     <Route index element={<Dashboard />} />
                     <Route path="spaces" element={<SpaceManagement />} />
-                    <Route path="tasks/:spaceId" element={<TaskManagement />} />
+                    <Route path="tasks/:spaceId?" element={<TaskManagement />} />
+                    <Route path="tasks" element={<TaskManagement />} />
 
                     {/* Nối link trang danh sách thông báo */}
                     <Route path="notifications" element={<NotificationsPage />} />
-
+                    <Route path ="users" element={<UserManagement />} />                    
                     {/* Nối link trang cài đặt thông báo (nếu cần dùng sau này) */}
                     <Route path="notification-settings" element={<NotificationSettingsPage />} />
                 </Route>
