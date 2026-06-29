@@ -45,7 +45,7 @@ const CompleteSprintModal = ({ isOpen, onClose, sprintName, completedTasksCount,
                 Where should the {openTasksCount} open issues be moved?
               </label>
               <select className="w-full p-2.5 bg-white border border-outline-variant rounded-lg text-[13px] focus:ring-2 focus:ring-primary focus:border-primary outline-none cursor-pointer">
-                <option value="backlog">Backlog</option>
+                <option value="backlog">Task list</option>
                 <option value="new-sprint">New Sprint</option>
               </select>
             </div>

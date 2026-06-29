@@ -4,6 +4,8 @@ import { useNavigate, useOutletContext } from 'react-router-dom';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import SprintInfoPopover from '../components/tasks/SprintInfoPopover';
 import CompleteSprintModal from '../components/tasks/CompleteSprintModal';
+import TaskDetailModal from '../components/tasks/TaskDetailModal';
+import DeleteTaskModal from '../components/tasks/DeleteTaskModal';
 
 export default function TaskManagement() {
   const navigate = useNavigate();
@@ -11,24 +13,46 @@ export default function TaskManagement() {
   const [view, setView] = useState('list');
   const [selectedTasks, setSelectedTasks] = useState([]);
   const [isSprintExpanded, setIsSprintExpanded] = useState(true);
+  const [selectedTaskDetail, setSelectedTaskDetail] = useState(null);
   
   // Sprint popover and complete modal states
   const [isSprintInfoOpen, setIsSprintInfoOpen] = useState(false);
   const [isCompleteSprintOpen, setIsCompleteSprintOpen] = useState(false);
   const sprintInfoAnchorRef = useRef(null);
+  const [taskToDelete, setTaskToDelete] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [viewMonth, setViewMonth] = useState(5); // June
+  const [viewYear, setViewYear] = useState(2026);
+
+  const getDaysInMonth = (year, month) => {
+    const days = [];
+    const startDay = new Date(year, month, 1).getDay();
+    const numDays = new Date(year, month + 1, 0).getDate();
+    for (let i = 0; i < startDay; i++) days.push(null);
+    for (let d = 1; d <= numDays; d++) days.push(d);
+    return days;
+  };
+
+  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+  // Dynamic sprints (Sprint 2, 3, ...) created via "Create sprint" button
+  const [extraSprints, setExtraSprints] = useState([]);
+  const [expandedSprints, setExpandedSprints] = useState({});
+  // Which sprint's ... menu is open (null = none, 'sprint-1' = Sprint 1, sprint.id = extra sprint)
+  const [openSprintMenuId, setOpenSprintMenuId] = useState(null);
 
   const [tasks, setTasks] = useState([
-    { id: "TM-104", title: "Infrastructure setup", assignee: "Alex Rivera", pts: 4, status: "New", priority: "High", date: "Jun 24, 2026" },
-    { id: "TM-301", title: "API Documentation update", assignee: "Sarah Chen", pts: 3, status: "In Progress", priority: "Medium", date: "Jun 28, 2026" },
-    { id: "TM-89", title: "Checkout flow mobile fix", assignee: "Jordan Smith", pts: 5, status: "In Testing", priority: "High", date: "Jul 02, 2026" },
-    { id: "TM-102", title: "Security Protocols Audit", assignee: "Alex Rivera", pts: 8, status: "Done", priority: "High", date: "Jun 20, 2026" },
-    { id: "TM-212", title: "SSO Authentication implementation", assignee: "Sarah Chen", pts: 2, status: "In Progress", priority: "Medium", date: "Jun 25, 2026" },
-    { id: "TM-105", title: "API Integration & Testing", assignee: "Jordan Smith", pts: 3, status: "Pending Review", priority: "High", date: "Jul 05, 2026" },
-    { id: "TM-402", title: "User Feedback UI Refactor", assignee: "Alex Rivera", pts: 2, status: "Need Revision", priority: "Low", date: "Jul 10, 2026" },
-    { id: "TM-505", title: "Database Migration Script", assignee: "Sarah Chen", pts: 5, status: "New", priority: "High", date: "Jul 12, 2026" },
-    { id: "TM-610", title: "Dashboard Charts optimization", assignee: "Jordan Smith", pts: 3, status: "In Testing", priority: "Medium", date: "Jul 15, 2026" },
-    { id: "TM-701", title: "Mobile App Performance Tuning", assignee: "Jordan Smith", pts: 4, status: "In Testing", priority: "Medium", date: "Jul 18, 2026" },
-    { id: "TM-802", title: "Push Notification Service", assignee: "Sarah Chen", pts: 3, status: "New", priority: "High", date: "Jul 20, 2026" },
+    { id: "TM-104", title: "Infrastructure setup", assignee: "Alex Rivera", pts: 4, status: "New", priority: "High", date: "Jun 24, 2026", description: "" },
+    { id: "TM-301", title: "API Documentation update", assignee: "Sarah Chen", pts: 3, status: "In Progress", priority: "Medium", date: "Jun 28, 2026", description: "" },
+    { id: "TM-89", title: "Checkout flow mobile fix", assignee: "Jordan Smith", pts: 5, status: "In Testing", priority: "High", date: "Jul 02, 2026", description: "" },
+    { id: "TM-102", title: "Security Protocols Audit", assignee: "Alex Rivera", pts: 8, status: "Done", priority: "High", date: "Jun 20, 2026", description: "" },
+    { id: "TM-212", title: "SSO Authentication implementation", assignee: "Sarah Chen", pts: 2, status: "In Progress", priority: "Medium", date: "Jun 25, 2026", description: "" },
+    { id: "TM-105", title: "API Integration & Testing", assignee: "Jordan Smith", pts: 3, status: "Pending Review", priority: "High", date: "Jul 05, 2026", description: "" },
+    { id: "TM-402", title: "User Feedback UI Refactor", assignee: "Alex Rivera", pts: 2, status: "Need Revision", priority: "Low", date: "Jul 10, 2026", description: "" },
+    { id: "TM-505", title: "Database Migration Script", assignee: "Sarah Chen", pts: 5, status: "New", priority: "High", date: "Jul 12, 2026", description: "" },
+    { id: "TM-610", title: "Dashboard Charts optimization", assignee: "Jordan Smith", pts: 3, status: "In Testing", priority: "Medium", date: "Jul 15, 2026", description: "" },
+    { id: "TM-701", title: "Mobile App Performance Tuning", assignee: "Jordan Smith", pts: 4, status: "In Testing", priority: "Medium", date: "Jul 18, 2026", description: "" },
+    { id: "TM-802", title: "Push Notification Service", assignee: "Sarah Chen", pts: 3, status: "New", priority: "High", date: "Jul 20, 2026", description: "" },
   ]);
 
   // Sync tasks with MainLayout context for the CreateTaskModal's RichTextEditor
@@ -73,8 +97,67 @@ export default function TaskManagement() {
     setView(newView);
   };
 
+  const handleDeleteTask = (taskId) => {
+    setTasks(prev => prev.filter(t => t.id !== taskId));
+    setTaskToDelete(null);
+  };
+
+  const handleCreateSprint = () => {
+    // Calculate next sprint number (Sprint 1 is fixed + existing extra sprints)
+    const nextNum = extraSprints.length + 2;
+    // Start date = 2 weeks after previous sprint starts (rough estimate)
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() + (extraSprints.length + 1) * 14);
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + 13);
+    const fmt = (d) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const newSprint = {
+      id: `sprint-${nextNum}`,
+      name: `SCRUM Sprint ${nextNum}`,
+      dateRange: `${startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
+      tasks: [],
+      isCompleted: false,
+    };
+    setExtraSprints(prev => [...prev, newSprint]);
+    setExpandedSprints(prev => ({ ...prev, [newSprint.id]: true }));
+  };
+
+  const toggleSprintExpanded = (sprintId) => {
+    setExpandedSprints(prev => ({ ...prev, [sprintId]: !prev[sprintId] }));
+  };
+
+  const handleDeleteExtraSprint = (sprintId) => {
+    setExtraSprints(prev => prev.filter(s => s.id !== sprintId));
+    setOpenSprintMenuId(null);
+  };
+
+  // Close sprint menus when clicking outside
+  useEffect(() => {
+    if (!openSprintMenuId) return;
+    const handler = (e) => {
+      if (!e.target.closest('[data-sprint-menu]')) {
+        setOpenSprintMenuId(null);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [openSprintMenuId]);
+
+  const filteredTasks = tasks.filter(task => {
+    if (selectedDate) {
+      try {
+        const selTime = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate()).getTime();
+        const taskTime = new Date(task.date).getTime();
+        return selTime === taskTime;
+      } catch (e) {
+        return false;
+      }
+    }
+    return true;
+  });
+
   return (
-    <div className="px-6 pb-6 pt-10 flex flex-col bg-background text-on-surface" style={{ height: '100%', overflow: 'hidden', position: 'relative' }} id="app-canvas">
+    <div className="px-6 pb-6 pt-10 flex flex-col bg-[#F4F6F8] text-on-surface" style={{ height: '100%', overflow: 'hidden', position: 'relative' }} id="app-canvas">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
@@ -90,7 +173,6 @@ export default function TaskManagement() {
             className={`flex items-center gap-2 px-2.5 py-1 rounded text-xs font-medium transition-colors ${view === 'list' ? 'bg-[#cdddff] text-[#003d9b]' : 'text-gray-500'}`}
             onClick={() => switchView('list')}
           >
-            <span className="material-symbols-outlined text-[16px]">list</span>
             List
           </button>
           <button
@@ -203,19 +285,49 @@ export default function TaskManagement() {
           <div className="relative group">
             <button className="flex items-center gap-2 px-3 py-1.5 bg-white border border-outline-variant rounded hover:bg-surface-container transition-colors shadow-sm">
               <span className="material-symbols-outlined text-[#5e4db2] text-[16px]">calendar_month</span>
-              <span className="text-[11px] font-bold text-[#5e4db2]">Date</span>
+              <span className="text-[11px] font-bold text-[#5e4db2]">
+                {selectedDate 
+                  ? selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                  : 'Date'}
+              </span>
             </button>
 
             {/* Calendar Dropdown */}
             <div className="absolute top-full right-0 mt-2 w-[280px] bg-white border border-outline-variant rounded-xl shadow-2xl hidden group-hover:block z-50 overflow-hidden">
               <div className="p-4">
                 <div className="flex items-center justify-between mb-4">
-                  <span className="text-[12px] font-bold text-[#5e4db2]">June 2026</span>
+                  <span className="text-[12px] font-bold text-[#5e4db2]">{monthNames[viewMonth]} {viewYear}</span>
                   <div className="flex gap-1">
-                    <button className="p-1 hover:bg-gray-100 rounded">
+                    <button 
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setViewMonth(m => {
+                          if (m === 0) {
+                            setViewYear(y => y - 1);
+                            return 11;
+                          }
+                          return m - 1;
+                        });
+                      }}
+                      className="p-1 hover:bg-gray-100 rounded"
+                    >
                       <span className="material-symbols-outlined text-[16px]">chevron_left</span>
                     </button>
-                    <button className="p-1 hover:bg-gray-100 rounded">
+                    <button 
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setViewMonth(m => {
+                          if (m === 11) {
+                            setViewYear(y => y + 1);
+                            return 0;
+                          }
+                          return m + 1;
+                        });
+                      }}
+                      className="p-1 hover:bg-gray-100 rounded"
+                    >
                       <span className="material-symbols-outlined text-[16px]">chevron_right</span>
                     </button>
                   </div>
@@ -228,13 +340,32 @@ export default function TaskManagement() {
                 </div>
 
                 <div className="grid grid-cols-7 gap-1">
-                  {Array.from({ length: 30 }).map((_, i) => {
-                    const day = i + 1;
-                    const isToday = day === 24;
+                  {getDaysInMonth(viewYear, viewMonth).map((day, i) => {
+                    if (day === null) {
+                      return <div key={`empty-${i}`} className="h-7 w-7" />;
+                    }
+                    const isSelected = selectedDate &&
+                      selectedDate.getDate() === day &&
+                      selectedDate.getMonth() === viewMonth &&
+                      selectedDate.getFullYear() === viewYear;
+                    const isToday = day === 24 && viewMonth === 5 && viewYear === 2026;
                     return (
                       <button
                         key={day}
-                        className={`h-7 w-7 flex items-center justify-center rounded-lg text-[10px] transition-colors ${isToday ? 'bg-[#5e4db2] text-white font-bold' : 'hover:bg-surface-container text-on-surface'
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (isSelected) {
+                            setSelectedDate(null);
+                          } else {
+                            setSelectedDate(new Date(viewYear, viewMonth, day));
+                          }
+                        }}
+                        className={`h-7 w-7 flex items-center justify-center rounded-lg text-[10px] transition-colors ${isSelected 
+                          ? 'bg-[#5e4db2] text-white font-bold' 
+                          : isToday 
+                            ? 'border border-[#5e4db2] text-[#5e4db2] font-semibold'
+                            : 'hover:bg-surface-container text-on-surface'
                           }`}
                       >
                         {day}
@@ -257,9 +388,10 @@ export default function TaskManagement() {
                 <KanbanColumn
                   key={status}
                   title={status}
-                  tasks={tasks.filter(t => t.status === status)}
+                  tasks={filteredTasks.filter(t => t.status === status)}
                   setTasks={setTasks}
                   onCreateTask={setShowCreateModal ? () => setShowCreateModal(true) : undefined}
+                  onOpenDetail={setSelectedTaskDetail}
                   color={status === 'Need Revision' ? 'error' : status === 'Done' ? 'green' : status === 'Cancelled' ? 'grey' : 'outline'}
                 />
               ))}
@@ -270,14 +402,14 @@ export default function TaskManagement() {
 
       {/* LIST VIEW */}
       {view === 'list' && (
-        <>
-          <div className="bg-white border border-outline-variant rounded-lg flex flex-col h-[calc(100vh-440px)] overflow-hidden shadow-sm" id="list-view-container">
+        <div style={{ flex: '1 1 0', minHeight: 0, overflowY: 'auto', paddingBottom: '16px' }}>
+          <div className="bg-white border border-outline-variant rounded-lg flex flex-col overflow-hidden shadow-sm" id="list-view-container">
             <div className="px-6 py-2 border-b border-[#DDE3F0] bg-[#FAFAFF] flex items-center justify-between flex-none">
               <div className="flex items-center gap-3">
                 <input
                   type="checkbox"
                   className="w-3.5 h-3.5 rounded border-outline-variant cursor-pointer accent-primary"
-                  checked={selectedTasks.length === tasks.length && tasks.length > 0}
+                  checked={selectedTasks.length === filteredTasks.length && filteredTasks.length > 0}
                   onChange={toggleAll}
                 />
                 <span
@@ -296,18 +428,18 @@ export default function TaskManagement() {
                   <span className="text-[11px] text-outline">18 Jun – 2 Jul</span>
                   <span className="material-symbols-outlined text-[14px] text-outline">info</span>
                 </div>
-                <span className="text-[11px] text-outline">({tasks.length} work items)</span>
+                <span className="text-[11px] text-outline">({filteredTasks.length} work items)</span>
               </div>
               <div className="flex items-center gap-4">
                 <div className="flex gap-1">
                   <span className="px-1.5 py-0.5 bg-gray-200 text-[10px] font-bold rounded text-outline">
-                    {tasks.filter(t => t.status === 'New' || t.status === 'Cancelled').length}
+                    {filteredTasks.filter(t => t.status === 'New' || t.status === 'Cancelled').length}
                   </span>
                   <span className="px-1.5 py-0.5 bg-[#ADC4FF] text-[10px] font-bold rounded text-[#003d9b]">
-                    {tasks.filter(t => ['In Progress', 'In Testing', 'Pending Review', 'Need Revision'].includes(t.status)).length}
+                    {filteredTasks.filter(t => ['In Progress', 'In Testing', 'Pending Review', 'Need Revision'].includes(t.status)).length}
                   </span>
                   <span className="px-1.5 py-0.5 bg-[#C2FFD9] text-[10px] font-bold rounded text-[#006D3A]">
-                    {tasks.filter(t => t.status === 'Done').length}
+                    {filteredTasks.filter(t => t.status === 'Done').length}
                   </span>
                 </div>
                 <button
@@ -316,7 +448,31 @@ export default function TaskManagement() {
                 >
                   Complete sprint
                 </button>
-                <span className="material-symbols-outlined text-[18px] text-outline cursor-pointer hover:text-on-surface transition-colors">more_horiz</span>
+                {/* Sprint 1 ... dropdown menu */}
+                <div className="relative" data-sprint-menu>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setOpenSprintMenuId(openSprintMenuId === 'sprint-1' ? null : 'sprint-1'); }}
+                    className={`p-1 rounded hover:bg-surface-container transition-colors ${openSprintMenuId === 'sprint-1' ? 'bg-surface-container text-on-surface' : 'text-outline'}`}
+                  >
+                    <span className="material-symbols-outlined text-[18px]">more_horiz</span>
+                  </button>
+                  {openSprintMenuId === 'sprint-1' && (
+                    <div className="absolute right-0 top-full mt-1 w-[160px] bg-white border border-outline-variant rounded-lg shadow-2xl py-1 z-[200]">
+                      <button
+                        onClick={() => { setOpenSprintMenuId(null); }}
+                        className="w-full px-4 py-2.5 text-[13px] text-left text-on-surface hover:bg-[#EBF0FF] hover:text-[#003d9b] transition-colors"
+                      >
+                        Edit sprint
+                      </button>
+                      <button
+                        onClick={() => { setOpenSprintMenuId(null); }}
+                        className="w-full px-4 py-2.5 text-[13px] text-left text-error hover:bg-red-50 transition-colors"
+                      >
+                        Delete sprint
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
             {isSprintExpanded && (
@@ -334,28 +490,126 @@ export default function TaskManagement() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-outline-variant">
-                    {tasks.map(task => (
+                    {filteredTasks.map(task => (
                       <TaskRow
                         key={task.id}
                         {...task}
                         isSelected={selectedTasks.includes(task.id)}
                         isAnySelected={selectedTasks.length > 0}
                         onToggle={() => toggleTask(task.id)}
+                        onOpenDetail={() => setSelectedTaskDetail(task)}
+                        onDelete={() => setTaskToDelete(task)}
                       />
                     ))}
                   </tbody>
                 </table>
               </div>
             )}
+            {/* + Create button below Sprint 1 table */}
+            {isSprintExpanded && (
+              <div className="px-4 py-2 border-t border-outline-variant/30 bg-white">
+                <button
+                  onClick={() => setShowCreateModal && setShowCreateModal(true)}
+                  className="flex items-center gap-1.5 text-outline hover:text-[#5e4db2] transition-colors group"
+                >
+                  <span className="material-symbols-outlined text-[18px] group-hover:scale-110 transition-transform">add</span>
+                  <span className="text-[12px] font-medium">Create</span>
+                </button>
+              </div>
+            )}
           </div>
 
-          {/* BACKLOG SECTION */}
+          {/* EXTRA SPRINTS (created dynamically) */}
+          {extraSprints.map((sprint) => (
+            <div key={sprint.id} className="mt-4 bg-white border border-outline-variant rounded-lg overflow-hidden shadow-sm">
+              {/* Sprint Header */}
+              <div className="px-6 py-2 border-b border-[#DDE3F0] bg-[#FAFAFF] flex items-center justify-between flex-none">
+                <div className="flex items-center gap-3">
+                  <input type="checkbox" className="w-3.5 h-3.5 rounded border-outline-variant cursor-pointer accent-primary" />
+                  <span
+                    className="material-symbols-outlined text-[18px] text-outline cursor-pointer transition-transform duration-200"
+                    style={{ transform: expandedSprints[sprint.id] ? 'rotate(0deg)' : 'rotate(-90deg)' }}
+                    onClick={() => toggleSprintExpanded(sprint.id)}
+                  >
+                    expand_more
+                  </span>
+                  <div className="flex items-center gap-1.5 cursor-pointer hover:bg-slate-100/80 px-2 py-0.5 rounded transition-all select-none">
+                    <span className="text-[12px] font-bold text-on-surface">{sprint.name}</span>
+                    <span className="text-[11px] text-outline">{sprint.dateRange}</span>
+                    <span className="material-symbols-outlined text-[14px] text-outline">info</span>
+                  </div>
+                  <span className="text-[11px] text-outline">({sprint.tasks.length} work items)</span>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="flex gap-1">
+                    <span className="px-1.5 py-0.5 bg-gray-200 text-[10px] font-bold rounded text-outline">0</span>
+                    <span className="px-1.5 py-0.5 bg-[#ADC4FF] text-[10px] font-bold rounded text-[#003d9b]">0</span>
+                    <span className="px-1.5 py-0.5 bg-[#C2FFD9] text-[10px] font-bold rounded text-[#006D3A]">0</span>
+                  </div>
+                  <button
+                    onClick={() => setIsCompleteSprintOpen(true)}
+                    className="px-3 py-1 bg-[#f0edff] text-[#5e4db2] border border-[#e6e1ff] rounded text-[11px] font-bold hover:bg-[#e6e1ff] transition-colors shadow-sm"
+                  >
+                    Complete sprint
+                  </button>
+                  {/* Extra sprint ... dropdown menu */}
+                  <div className="relative" data-sprint-menu>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setOpenSprintMenuId(openSprintMenuId === sprint.id ? null : sprint.id); }}
+                      className={`p-1 rounded hover:bg-surface-container transition-colors ${openSprintMenuId === sprint.id ? 'bg-surface-container text-on-surface' : 'text-outline'}`}
+                    >
+                      <span className="material-symbols-outlined text-[18px]">more_horiz</span>
+                    </button>
+                    {openSprintMenuId === sprint.id && (
+                      <div className="absolute right-0 top-full mt-1 w-[160px] bg-white border border-outline-variant rounded-lg shadow-2xl py-1 z-[200]">
+                        <button
+                          onClick={() => { setOpenSprintMenuId(null); }}
+                          className="w-full px-4 py-2.5 text-[13px] text-left text-on-surface hover:bg-[#EBF0FF] hover:text-[#003d9b] transition-colors"
+                        >
+                          Edit sprint
+                        </button>
+                        <button
+                          onClick={() => handleDeleteExtraSprint(sprint.id)}
+                          className="w-full px-4 py-2.5 text-[13px] text-left text-error hover:bg-red-50 transition-colors"
+                        >
+                          Delete sprint
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Sprint Body - Empty State */}
+              {expandedSprints[sprint.id] && (
+                <div className="border-t border-dashed border-outline-variant/60 p-6 flex flex-col items-center justify-center bg-surface-container-lowest min-h-[80px]">
+                  <span className="material-symbols-outlined text-[28px] text-outline/50 mb-1">sprint</span>
+                  <span className="text-[11px] text-outline italic">No tasks in this sprint yet. Drag tasks here or create new ones.</span>
+                </div>
+              )}
+
+              {/* + Create button below sprint body */}
+              {expandedSprints[sprint.id] && (
+                <div className="px-4 py-2 border-t border-outline-variant/30 bg-white">
+                  <button
+                    onClick={() => setShowCreateModal && setShowCreateModal(true)}
+                    className="flex items-center gap-1.5 text-outline hover:text-[#5e4db2] transition-colors group"
+                  >
+                    <span className="material-symbols-outlined text-[18px] group-hover:scale-110 transition-transform">add</span>
+                    <span className="text-[12px] font-medium">Create</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+
+          {/* TASK LIST / BACKLOG SECTION */}
           <div className="mt-4 flex flex-col gap-2" id="backlog-section">
             <div className="flex items-center justify-between bg-surface-container-low/30 p-2 rounded-t-lg border-x border-t border-outline-variant">
               <div className="flex items-center gap-3">
                 <input type="checkbox" className="w-3.5 h-3.5 rounded border-outline-variant" />
                 <span className="material-symbols-outlined text-[18px] text-outline cursor-pointer">expand_more</span>
-                <span className="text-[12px] font-bold text-on-surface">Backlog</span>
+                <span className="text-[12px] font-bold text-on-surface">Task list</span>
                 <span className="text-[11px] text-outline">(0 work items)</span>
               </div>
               <div className="flex items-center gap-4">
@@ -364,14 +618,17 @@ export default function TaskManagement() {
                   <span className="px-1.5 py-0.5 bg-[#ADC4FF] text-[10px] font-bold rounded text-[#003d9b]">0</span>
                   <span className="px-1.5 py-0.5 bg-[#C2FFD9] text-[10px] font-bold rounded text-[#006D3A]">0</span>
                 </div>
-                <button className="px-3 py-1 bg-white border border-outline-variant rounded text-[11px] font-bold hover:bg-surface-container transition-colors shadow-sm">
+                <button
+                  onClick={handleCreateSprint}
+                  className="px-3 py-1 bg-white border border-outline-variant rounded text-[11px] font-bold hover:bg-[#f0edff] hover:text-[#5e4db2] hover:border-[#e6e1ff] transition-colors shadow-sm"
+                >
                   Create sprint
                 </button>
               </div>
             </div>
 
             <div className="border border-dashed border-outline-variant rounded-b-lg p-6 flex flex-col items-center justify-center bg-surface-container-lowest">
-              <span className="text-[11px] text-outline italic">Your backlog is empty.</span>
+              <span className="text-[11px] text-outline italic">Your task list is empty.</span>
             </div>
 
             <button
@@ -386,7 +643,7 @@ export default function TaskManagement() {
                 </span>
             </button>
           </div>
-        </>
+        </div>
       )}
 
       {/* Popovers & Modals */}
@@ -405,11 +662,24 @@ export default function TaskManagement() {
         completedTasksCount={tasks.filter(t => t.status === 'Done').length}
         openTasksCount={tasks.filter(t => t.status !== 'Done').length}
       />
+
+      <TaskDetailModal 
+        task={selectedTaskDetail} 
+        onClose={() => setSelectedTaskDetail(null)} 
+        tasks={tasks}
+      />
+
+      <DeleteTaskModal
+        isOpen={!!taskToDelete}
+        onClose={() => setTaskToDelete(null)}
+        onConfirm={handleDeleteTask}
+        task={taskToDelete}
+      />
     </div>
   );
 }
 
-function KanbanColumn({ title, tasks, setTasks, onCreateTask, color = 'outline' }) {
+function KanbanColumn({ title, tasks, setTasks, onCreateTask, onOpenDetail, color = 'outline' }) {
   const headerClass = `bg-[#E0E8FF] border-[#ADC4FF] ${title === 'Need Revision' ? 'text-[#BA1A1A]' :
     title === 'Done' ? 'text-[#006D3A]' :
       title === 'Cancelled' ? 'text-[#475467]' :
@@ -430,7 +700,7 @@ function KanbanColumn({ title, tasks, setTasks, onCreateTask, color = 'outline' 
             style={{ flex: '1 1 0', minHeight: '50px', overflowY: 'auto', overflowX: 'visible', scrollbarWidth: 'thin' }}
           >
             {tasks.map((task, index) => (
-              <TaskCard key={task.id} task={task} index={index} totalCount={tasks.length} setTasks={setTasks} />
+              <TaskCard key={task.id} task={task} index={index} totalCount={tasks.length} setTasks={setTasks} onOpenDetail={onOpenDetail} />
             ))}
             {provided.placeholder}
           </div>
@@ -447,8 +717,8 @@ function KanbanColumn({ title, tasks, setTasks, onCreateTask, color = 'outline' 
   );
 }
 
-function TaskCard({ task, index, totalCount, setTasks }) {
-  const { id, title, date, pts, priority } = task;
+function TaskCard({ task, index, totalCount, setTasks, onOpenDetail }) {
+  const { id, title, date, pts, priority, status } = task;
   const [isEditing, setIsEditing] = React.useState(false);
   const [tempPts, setTempPts] = React.useState(pts);
   const [showMenu, setShowMenu] = React.useState(false);
@@ -501,10 +771,14 @@ function TaskCard({ task, index, totalCount, setTasks }) {
           {...provided.draggableProps}
           {...provided.dragHandleProps}
           style={{ ...provided.draggableProps.style }}
-          className={`relative bg-surface-container-lowest p-2.5 border border-outline-variant rounded shadow-sm hover:bg-surface-container-low transition-all group-hover:text-[#1E40AF] group ${snapshot.isDragging ? 'shadow-xl ring-2 ring-primary/20 scale-[1.02] z-50' : ''}`}
+          className={`relative bg-surface-container-lowest p-2.5 border border-outline-variant rounded shadow-sm hover:bg-surface-container-low transition-all group ${status === 'Cancelled' ? 'opacity-40' : 'group-hover:text-[#1E40AF]'} ${snapshot.isDragging ? 'shadow-xl ring-2 ring-primary/20 scale-[1.02] z-50' : ''}`}
+          onClick={(e) => {
+             if (e.defaultPrevented) return;
+             onOpenDetail && onOpenDetail(task);
+          }}
         >
           <div className="flex justify-between items-start mb-2 gap-2">
-            <div className="text-[11px] font-medium text-[#003d9b] group-hover:text-blue-700 text-on-surface  leading-snug flex items-center gap-1.5 flex-wrap">
+            <div className={`text-[11px] leading-snug flex items-center gap-1.5 flex-wrap ${status === 'Cancelled' ? 'font-normal text-outline' : 'font-medium text-[#003d9b] group-hover:text-blue-700 text-on-surface'}`}>
               {title}
               <span className="material-symbols-outlined text-[14px] text-outline opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer hover:text-primary">edit</span>
             </div>
@@ -615,7 +889,7 @@ function TaskCard({ task, index, totalCount, setTasks }) {
           </div>
           <div className="flex justify-between items-center mt-auto">
             <div className="flex items-center gap-2">
-              <span className="text-[10px] text-outline font-bold uppercase">{id}</span>
+              <span className={`text-[10px] text-outline font-bold uppercase ${status === 'Done' ? 'line-through' : ''}`}>{id}</span>
               {!isEditing ? (
                 <span
                   className="px-1 py-0.5 bg-surface-container rounded-sm text-[9px] font-bold text-outline cursor-pointer hover:bg-primary/10 hover:text-primary"
@@ -660,7 +934,7 @@ function TaskCard({ task, index, totalCount, setTasks }) {
   );
 }
 
-function TaskRow({ id, title, assignee, pts, status, date, priority, isSelected, isAnySelected, onToggle }) {
+function TaskRow({ id, title, assignee, pts, status, date, priority, isSelected, isAnySelected, onToggle, onOpenDetail, onDelete }) {
   const statusClass = status === 'Need Revision'
     ? 'bg-[#FFF0F0] text-[#BA1A1A]'
     : status === 'Done'
@@ -672,7 +946,7 @@ function TaskRow({ id, title, assignee, pts, status, date, priority, isSelected,
   return (
     <tr
       className={`hover:bg-surface-container-low/50 transition-colors cursor-pointer ${isSelected ? 'bg-[#e6f0ff]' : ''}`}
-      onClick={onToggle}
+      onClick={() => onOpenDetail && onOpenDetail()}
     >
       <td className="px-2 py-2">
         <div className="flex items-center justify-center gap-3">
@@ -680,6 +954,7 @@ function TaskRow({ id, title, assignee, pts, status, date, priority, isSelected,
             type="checkbox"
             className={`w-3.5 h-3.5 rounded border-outline-variant cursor-pointer accent-primary transition-opacity ${isAnySelected ? 'visible' : 'invisible'}`}
             checked={isSelected}
+            onClick={(e) => e.stopPropagation()}
             onChange={(e) => {
               e.stopPropagation();
               onToggle();
@@ -710,7 +985,15 @@ function TaskRow({ id, title, assignee, pts, status, date, priority, isSelected,
       </td>
       <td className="px-4 py-2 text-[11px] text-outline">{date}</td>
       <td className="px-4 py-2 text-center">
-        <span className="material-symbols-outlined text-outline hover:text-error cursor-pointer text-[16px]">delete</span>
+        <span 
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete && onDelete();
+          }}
+          className="material-symbols-outlined text-outline hover:text-error cursor-pointer text-[16px]"
+        >
+          delete
+        </span>
       </td>
     </tr>
   );
