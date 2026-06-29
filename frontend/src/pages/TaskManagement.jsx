@@ -668,6 +668,10 @@ export default function TaskManagement() {
         task={selectedTaskDetail}
         onClose={() => setSelectedTaskDetail(null)}
         tasks={tasks}
+        onUpdateTask={(updatedTask) => {
+          setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
+          setSelectedTaskDetail(updatedTask);
+        }}
       />
  
       <DeleteTaskModal
@@ -719,7 +723,8 @@ function KanbanColumn({ title, tasks, setTasks, onCreateTask, onOpenDetail, colo
 }
  
 function TaskCard({ task, index, totalCount, setTasks, onOpenDetail }) {
-  const { id, title, date, pts, priority, status } = task;
+  const { id, title, date, pts, priority, status, attachments = [] } = task;
+  const previewImage = attachments.find(att => att.type === 'image' && att.previewUrl)?.previewUrl;
   const [isEditing, setIsEditing] = React.useState(false);
   const [tempPts, setTempPts] = React.useState(pts);
   const [showMenu, setShowMenu] = React.useState(false);
@@ -888,6 +893,11 @@ function TaskCard({ task, index, totalCount, setTasks, onOpenDetail }) {
               <span className="text-[11px] font-semibold">{date}</span>
             </div>
           </div>
+          {previewImage ? (
+            <div className="mb-3 overflow-hidden rounded-xl">
+              <img src={previewImage} alt={`Preview for ${title}`} className="w-full h-28 object-cover rounded-xl" />
+            </div>
+          ) : null}
           <div className="flex justify-between items-center mt-auto">
             <div className="flex items-center gap-2">
               <span className={`text-[10px] text-outline font-bold uppercase ${status === 'Done' ? 'line-through' : ''}`}>{id}</span>
