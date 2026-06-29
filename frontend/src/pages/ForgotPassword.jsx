@@ -15,7 +15,7 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div className="bg-[#f8fafc] font-sans min-h-screen flex flex-col antialiased text-slate-800">
+    <div className="bg-surface font-sans min-h-screen flex flex-col antialiased text-slate-800">
       
       {/* Khối nội dung chính */}
       <main className="flex-grow flex items-center justify-center p-6">
@@ -101,15 +101,6 @@ export default function ForgotPassword() {
           </div>
         </section>
       </main>
-
-      {/* Footer */}
-      <footer className="w-full py-6 px-8 border-t border-slate-100 flex flex-col md:flex-row justify-between items-center text-[11px] text-slate-400 tracking-widest font-semibold bg-white">
-        <div>© 2026 TaskFlow Enterprise. All rights reserved.</div>
-        <div className="flex gap-6 mt-4 md:mt-0">
-          <a className="hover:text-slate-600 transition-colors" href="/privacy">Privacy Policy</a>
-          <a className="hover:text-slate-600 transition-colors" href="/terms">Terms of Service</a>
-        </div>
-      </footer>
     </div>
   );
 }

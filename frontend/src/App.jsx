@@ -16,6 +16,7 @@ import MainLayout from "./components/layout/MainLayout";
 import SpaceManagement from "./pages/SpaceManagement";
 import TaskManagement from "./pages/TaskManagement";
 import Dashboard from "./pages/Dashboard";
+import UserManagement from "./pages/UserManagement";
 
 export default function App() {
     return (
@@ -34,6 +35,7 @@ export default function App() {
                     <Route index element={<Dashboard />} />
                     <Route path="spaces" element={<SpaceManagement />} />
                     <Route path="tasks/:spaceId" element={<TaskManagement />} />
+                    <Route path="users" element={<UserManagement />} />
                 </Route>
 
                 {/* Redirect */}
