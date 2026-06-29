@@ -3,7 +3,6 @@ import { Outlet, Link, useLocation, useNavigate, useSearchParams } from 'react-r
 import taskflowLogo from '../../assets/taskflow-logo.png';
 import CreateTaskModal from '../tasks/CreateTaskModal';
 import NotificationDropdown from '../notifications/NotificationDropdown';
-
 export default function MainLayout() {
   const location = useLocation();
   const navigate = useNavigate();
