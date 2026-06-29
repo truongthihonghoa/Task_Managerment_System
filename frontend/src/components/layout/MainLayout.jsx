@@ -108,7 +108,7 @@ export default function MainLayout() {
   const unreadCount = filteredNotifications.filter(n => !n.is_read).length;
 
   const handleMarkAllRead = () => {
-    setAllNotifications(allNotifications.map(n => 
+    setAllNotifications(allNotifications.map(n =>
       n.role === currentRole ? { ...n, is_read: true } : n
     ));
   };
@@ -123,7 +123,7 @@ export default function MainLayout() {
   useEffect(() => {
     function handleClickOutside(event) {
       if (
-        dropdownRef.current && 
+        dropdownRef.current &&
         !dropdownRef.current.contains(event.target) &&
         bellRef.current &&
         !bellRef.current.contains(event.target)
@@ -336,7 +336,7 @@ export default function MainLayout() {
 
             {/* Notification Bell Dropdown */}
             <div className="relative" ref={bellRef}>
-              <button 
+              <button
                 onClick={() => setShowNotifications(!showNotifications)}
                 className="relative text-gray-500 hover:text-gray-700 p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
                 title="View notifications"
@@ -346,10 +346,10 @@ export default function MainLayout() {
                   <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-[#EF4444] rounded-full border-2 border-white"></span>
                 )}
               </button>
-              
+
               {showNotifications && (
                 <div ref={dropdownRef} className="absolute right-0 z-50">
-                  <NotificationDropdown 
+                  <NotificationDropdown
                     notifications={filteredNotifications}
                     onMarkAllRead={handleMarkAllRead}
                     onClose={() => setShowNotifications(false)}

@@ -16,6 +16,7 @@ import MainLayout from "./components/layout/MainLayout";
 import SpaceManagement from "./pages/SpaceManagement";
 import TaskManagement from "./pages/TaskManagement";
 import Dashboard from "./pages/Dashboard";
+import UserManagement from "./pages/UserManagement";
 
 // Import thêm 2 trang thông báo đúng theo cấu trúc thư mục của bạn
 import NotificationsPage from "./pages/NotificationsPage";
