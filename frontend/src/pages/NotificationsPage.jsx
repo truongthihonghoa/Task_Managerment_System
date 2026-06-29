@@ -1,102 +1,119 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Search, BellOff } from 'lucide-react'; // Import trực tiếp icon từ thư viện
+import { Search, BellOff } from 'lucide-react'; 
 import NotificationItem from '../components/notifications/NotificationItem';
+
+// ==========================================
+// 1. ĐƯA MẢNG MOCK DATA RA NGOÀI COMPONENT ĐỂ HEADER CÓ THỂ IMPORT
+// ==========================================
+export let globalNotifications = [
+  {
+    NOTI_id: 1,
+    type: 'task_assigned',
+    task_name: 'Design Dashboard',
+    triggered_by_name: 'Hoa',
+    triggered_by_avatar: true,
+    triggered_by_initials: 'H',
+    is_read: false,
+    created_at: '2 min ago',
+    group: 'Today',
+    role: 'USER',
+    task_status: 'To Do',
+    space_id: 'spaces'
+  },
+  {
+    NOTI_id: 2,
+    type: 'status_changed',
+    task_name: 'Design System',
+    new_status: 'In Review',
+    triggered_by_name: 'Phạm Thị Cẩm Tiên',
+    triggered_by_avatar: true,
+    triggered_by_initials: 'PT',
+    is_read: false,
+    created_at: '33 sec ago',
+    group: 'Today',
+    role: 'USER',
+    task_status: 'In Progress',
+    space_id: 'spaces'
+  },
+  {
+    NOTI_id: 3,
+    type: 'comment_added',
+    task_name: 'Audit Logs Screen',
+    triggered_by_name: 'Trung',
+    triggered_by_avatar: true,
+    triggered_by_initials: 'T',
+    is_read: true,
+    created_at: 'Yesterday',
+    group: 'Yesterday',
+    role: 'USER',
+    task_status: 'In Progress',
+    space_id: 'spaces'
+  },
+  {
+    NOTI_id: 4,
+    type: 'due_today',
+    task_name: 'Database Migration',
+    is_read: false,
+    created_at: '3 hours ago',
+    group: 'Today',
+    role: 'USER',
+    task_status: 'Pending',
+    space_id: 'spaces'
+  },
+  // ADMIN
+  {
+    NOTI_id: 10,
+    type: 'user_registered',
+    target_user: 'Nguyen Van A',
+    is_read: false,
+    created_at: '5 min ago',
+    group: 'Today',
+    role: 'ADMIN'
+  },
+  {
+    NOTI_id: 11,
+    type: 'account_locked',
+    target_user: 'User123',
+    is_read: false,
+    created_at: '10 min ago',
+    group: 'Today',
+    role: 'ADMIN'
+  },
+  {
+    NOTI_id: 12,
+    type: 'user_verified',
+    target_user: 'Alex Morgan',
+    is_read: true,
+    created_at: '2 days ago',
+    group: 'Earlier',
+    role: 'ADMIN'
+  }
+];
+
+// Hàm phát tín hiệu đồng bộ giữa 2 bên
+export const updateGlobalNotifications = (newData) => {
+  globalNotifications = newData;
+  window.dispatchEvent(new Event('sync_global_notifications'));
+};
 
 const NotificationsPage = () => {
   const [searchParams] = useSearchParams();
   const [filter, setFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Sync role with Dashboard logic: Default to ADMIN unless role=USER is specified
   const roleParam = searchParams.get('role')?.toUpperCase();
   const currentRole = roleParam === "USER" ? "USER" : "ADMIN";
 
-  // Mock data for the page matching the new rules
-  const [allNotifications, setAllNotifications] = useState([
-    {
-      NOTI_id: 1,
-      type: 'task_assigned',
-      task_name: 'Design Dashboard',
-      triggered_by_name: 'Hoa',
-      triggered_by_avatar: true,
-      triggered_by_initials: 'H',
-      is_read: false,
-      created_at: '2 min ago',
-      group: 'Today',
-      role: 'USER',
-      task_status: 'To Do',
-      space_id: 'spaces'
-    },
-    {
-      NOTI_id: 2,
-      type: 'status_changed',
-      task_name: 'Design System',
-      new_status: 'In Review',
-      triggered_by_name: 'Phạm Thị Cẩm Tiên',
-      triggered_by_avatar: true,
-      triggered_by_initials: 'PT',
-      is_read: false,
-      created_at: '33 sec ago',
-      group: 'Today',
-      role: 'USER',
-      task_status: 'In Progress',
-      space_id: 'spaces'
-    },
-    {
-      NOTI_id: 3,
-      type: 'comment_added',
-      task_name: 'Audit Logs Screen',
-      triggered_by_name: 'Trung',
-      triggered_by_avatar: true,
-      triggered_by_initials: 'T',
-      is_read: true,
-      created_at: 'Yesterday',
-      group: 'Yesterday',
-      role: 'USER',
-      task_status: 'In Progress',
-      space_id: 'spaces'
-    },
-    {
-      NOTI_id: 4,
-      type: 'due_today',
-      task_name: 'Database Migration',
-      is_read: false,
-      created_at: '3 hours ago',
-      group: 'Today',
-      role: 'USER',
-      task_status: 'Pending',
-      space_id: 'spaces'
-    },
-    // ADMIN
-    {
-      NOTI_id: 10,
-      type: 'user_registered',
-      target_user: 'Nguyen Van A',
-      is_read: false,
-      created_at: '5 min ago',
-      group: 'Today',
-      role: 'ADMIN'
-    },
-    {
-      NOTI_id: 11,
-      type: 'account_locked',
-      target_user: 'User123',
-      is_read: false,
-      created_at: '10 min ago',
-      group: 'Today',
-      role: 'ADMIN'
-    },
-    {
-      NOTI_id: 12,
-      type: 'user_verified',
-      target_user: 'Alex Morgan',
-      is_read: true,
-      created_at: '2 days ago',
-      group: 'Earlier',
-      role: 'ADMIN'
-    }
-  ]);
+  // Đồng bộ state UI với biến global
+  const [allNotifications, setAllNotifications] = useState(globalNotifications);
+
+  // Lắng nghe thay đổi từ Header (Ví dụ bấm Đọc tất cả trên header)
+  useEffect(() => {
+    const handleSync = () => setAllNotifications([...globalNotifications]);
+    window.addEventListener('sync_global_notifications', handleSync);
+    return () => window.removeEventListener('sync_global_notifications', handleSync);
+  }, []);
 
   const roleFiltered = allNotifications.filter(n => n.role === currentRole);
 
@@ -106,7 +123,6 @@ const NotificationsPage = () => {
       (filter === 'Unread' && !n.is_read) ||
       (filter === 'Read' && n.is_read);
 
-    // Search in message logic
     const taskName = n.task_name || '';
     const triggeredBy = n.triggered_by_name || '';
     const targetUser = n.target_user || '';
@@ -120,9 +136,10 @@ const NotificationsPage = () => {
   });
 
   const markAllAsRead = () => {
-    setAllNotifications(allNotifications.map(n =>
+    const updated = globalNotifications.map(n =>
       n.role === currentRole ? { ...n, is_read: true } : n
-    ));
+    );
+    updateGlobalNotifications(updated);
   };
 
   return (
@@ -195,7 +212,6 @@ const NotificationsPage = () => {
           ) : (
             <div className="py-20 flex flex-col items-center justify-center text-center px-10">
               <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-4">
-                {/* Sử dụng component BellOff trực tiếp */}
                 <BellOff className="w-10 h-10 text-gray-300" />
               </div>
               <h3 className="font-bold text-gray-700">No {currentRole.toLowerCase()} notifications</h3>
