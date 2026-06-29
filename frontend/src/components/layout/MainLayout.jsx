@@ -296,7 +296,7 @@ export default function MainLayout() {
       <div className="flex-1 flex flex-col min-w-0">
 
         {/* BEGIN: MainHeader */}
-        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 z-10" data-purpose="top-header">
+        <header className="relative h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 z-20" data-purpose="top-header">
 
           {/* Cụm Tìm kiếm & Menu 3 gạch mở rộng */}
           <div className="flex items-center flex-1 mr-8">
