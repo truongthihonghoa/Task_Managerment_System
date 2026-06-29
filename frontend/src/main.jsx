@@ -1,7 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
-// import './index.css' // Hoặc file chứa tailwind của bạn
+import './styles/global.css' // Import Design system
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
