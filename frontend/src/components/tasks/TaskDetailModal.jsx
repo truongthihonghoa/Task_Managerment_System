@@ -1,8 +1,8 @@
- import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import '../../styles/CreateTaskModal.css';
 import RichTextEditor from './RichTextEditor';
 
- export default function TaskDetailModal({ task, onClose, tasks = [] }) {
+export default function TaskDetailModal({ task, onClose, tasks = [], onUpdateTask }) {
   const [activeTab, setActiveTab] = useState('comments');
   const [commentText, setCommentText] = useState('');
   const [isStatusOpen, setIsStatusOpen] = useState(false);
@@ -11,12 +11,27 @@ import RichTextEditor from './RichTextEditor';
   const [isCreatedOpen, setIsCreatedOpen] = useState(false);
   const [isStoryPointsOpen, setIsStoryPointsOpen] = useState(false);
   const [localTask, setLocalTask] = useState(task || {});
-  const [isDescriptionEditing , setIsDescriptionEditing] = useState(false);
+  const [isDescriptionEditing, setIsDescriptionEditing] = useState(false);
   const [tempDescription, setTempDescription] = useState(task?.description || '');
   const [isCommentEditing, setIsCommentEditing] = useState(false);
   const [tempComment, setTempComment] = useState('');
   const [isTitleEditing, setIsTitleEditing] = useState(false);
   const [tempTitle, setTempTitle] = useState(task?.title || '');
+  const [isAssigneeOpen, setIsAssigneeOpen] = useState(false);
+  const [assignHistory, setAssignHistory] = useState([]);
+
+  const availableAssignees = [
+    { user_id: null, name: 'Unassigned', initials: 'UN', color: '#8e8f90', textColor: '#FFFFFF', icon: 'person' },
+    { user_id: 'c2ed9d7f-f0ea-4d1a-bbe9-042d94a6de8b', name: 'Pham Tien', initials: 'PT', color: '#2f3650', textColor: '#FFFFFF' },
+    { user_id: '9e7291f0-8f6e-41c4-8ec5-5a86d0ecb02d', name: 'Hoang Hoa', initials: 'HH', color: '#F97316', textColor: '#FFFFFF' },
+    { user_id: '8ce04f65-ea2c-4279-8350-7c1f0e81c9f5', name: 'Trong Nghia', initials: 'TN', color: '#14B8A6', textColor: '#FFFFFF' }
+  ];
+
+  // Mock user data for "Changed by" field in history (sau cần thay: Trang Nguyen hiện tại là mình giả định là “current user” đang thao tác sửa assignee.)
+  const currentUser = {
+    user_id: '7f58c8c9-e988-4959-aabc-7d09e02f6e65',
+    name: 'Trang Nguyen'
+  };
 
   const [completedMonth, setCompletedMonth] = useState(5);
   const [completedYear, setCompletedYear] = useState(2026);
@@ -38,6 +53,7 @@ import RichTextEditor from './RichTextEditor';
   useEffect(() => {
     if (task) {
       setLocalTask(task);
+      setAssignHistory(sortAssignHistory(task.assignmentHistory || []));
       setTempDescription(task.description || '');
       setTempTitle(task.title || '');
       setIsDescriptionEditing(false);
@@ -79,13 +95,126 @@ import RichTextEditor from './RichTextEditor';
     return parts.map(n => n ? n[0] : '').join('').toUpperCase().substring(0, 2);
   };
 
+  const assigneeProfiles = {
+    'Pham Tien': { initials: 'PT', color: '#2f3650', textColor: '#FFFFFF' },
+    'Hoang Hoa': { initials: 'HH', color: '#F97316', textColor: '#FFFFFF' },
+    'Trong Nghia': { initials: 'TN', color: '#14B8A6', textColor: '#FFFFFF' },
+    'Unassigned': { initials: 'UN', color: '#8e8f90', textColor: '#FFFFFF' }
+  };
+
+  const getAssigneeProfile = (assignee) => {
+    if (!assignee) return assigneeProfiles['Unassigned'];
+    return assigneeProfiles[assignee] || {
+      initials: getInitials(assignee),
+      color: '#9CA3AF',
+      textColor: '#FFFFFF'
+    };
+  };
+
+  const sortAssignHistory = (history) => {
+    return [...history].sort((a, b) => new Date(b.changed_at || 0) - new Date(a.changed_at || 0));
+  };
+
+  const makeUuid = () => {
+    if (window.crypto?.randomUUID) return window.crypto.randomUUID();
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+      const r = Math.random() * 16 | 0;
+      const v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  };
+
+  const getAssigneeRecord = (assigneeName) => {
+    const displayName = assigneeName || 'Unassigned';
+    return availableAssignees.find(user => user.name === displayName) || {
+      user_id: null,
+      name: displayName,
+      initials: getInitials(displayName),
+      color: '#9CA3AF',
+      textColor: '#FFFFFF'
+    };
+  };
+
+  const getHistoryName = (entry, field) => {
+    return entry[`${field}_name`] || entry[field] || 'Unassigned';
+  };
+
+  const getChangedByName = (entry) => {
+    return entry.changed_by_name || entry.changed_by || 'Unknown user';
+  };
+
+  const formatHistoryTime = (value) => {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+
+    const diffMs = Date.now() - date.getTime();
+    const diffMinutes = Math.max(0, Math.floor(diffMs / 60000));
+    if (diffMinutes < 1) return 'just now';
+    if (diffMinutes < 60) return `${diffMinutes} min${diffMinutes === 1 ? '' : 's'} ago`;
+
+    const diffHours = Math.floor(diffMinutes / 60);
+    if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`;
+
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays < 7) return `${diffDays} day${diffDays === 1 ? '' : 's'} ago`;
+
+    return date.toLocaleString();
+  };
+
+  const buildAssignHistoryRecord = (previousTask, updatedTask) => {
+    const previousAssignee = getAssigneeRecord(previousTask.assignee);
+    const newAssignee = getAssigneeRecord(updatedTask.assignee);
+
+    return {
+      assignment_history_id: makeUuid(),
+      task_id: updatedTask.task_id || updatedTask.id,
+      previous_assignee_id: previousAssignee.user_id,
+      new_assignee_id: newAssignee.user_id,
+      changed_by: currentUser.user_id,
+      reason: '',
+      change_status: updatedTask.status || '',
+      changed_at: new Date().toISOString(),
+      previous_assignee_name: previousAssignee.name,
+      new_assignee_name: newAssignee.name,
+      changed_by_name: currentUser.name
+    };
+  };
+
+  const handleAssigneeChange = (selectedUser) => {
+    const newAssignee = selectedUser.name === 'Unassigned' ? '' : selectedUser.name;
+    const previousAssignee = localTask.assignee || '';
+
+    if (previousAssignee === newAssignee) {
+      setIsAssigneeOpen(false);
+      return;
+    }
+
+    const updatedTask = { ...localTask, assignee: newAssignee };
+
+    try {
+      if (onUpdateTask) onUpdateTask(updatedTask);
+    } catch (err) {
+      return;
+    }
+
+    const entry = buildAssignHistoryRecord(localTask, updatedTask);
+    const nextHistory = sortAssignHistory([entry, ...assignHistory]);
+    const taskWithHistory = { ...updatedTask, assignmentHistory: nextHistory };
+
+    setAssignHistory(nextHistory);
+    setLocalTask(taskWithHistory);
+    setIsAssigneeOpen(false);
+
+    if (onUpdateTask) onUpdateTask(taskWithHistory);
+  };
+
   return (
-    <div 
+    <div
       className="fixed inset-0 z-[10000] flex items-center justify-center"
       style={{ backgroundColor: 'rgba(9, 30, 66, 0.54)', backdropFilter: 'blur(2px)' }}
       onClick={onClose}
     >
-      <div 
+      <div
         className="bg-white flex flex-col overflow-hidden"
         style={{
           width: '90%',
@@ -99,12 +228,12 @@ import RichTextEditor from './RichTextEditor';
         onClick={e => e.stopPropagation()}
       >
         {/* ─── Header ─── */}
-        <div 
+        <div
           className="flex justify-between items-center shrink-0"
           style={{ padding: '14px 24px', borderBottom: '2px solid #F4F5F7' }}
         >
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined " style={{ color: '#4C2B74', fontSize: '25px'}}>task_alt</span>
+            <span className="material-symbols-outlined " style={{ color: '#4C2B74', fontSize: '25px' }}>task_alt</span>
             <span style={{ fontSize: '11px', fontWeight: 600, color: '#5E6C84', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
               {task.id} / {task.sprint || 'Development'}
             </span>
@@ -126,13 +255,13 @@ import RichTextEditor from './RichTextEditor';
         <div className="flex flex-1 overflow-hidden">
 
           {/* ── Left: Main Details ── */}
-          <main 
+          <main
             className="flex-1 overflow-y-auto custom-scrollbar"
             style={{ padding: '28px 32px', backgroundColor: '#fff' }}
           >
             {/* Title */}
             {!isTitleEditing ? (
-              <h1 
+              <h1
                 onClick={() => setIsTitleEditing(true)}
                 className="hover:bg-[#F4F5F7] rounded cursor-pointer transition-colors"
                 style={{ fontSize: '20px', fontWeight: 500, color: '#172B4D', marginBottom: '16px', lineHeight: '1.4', padding: '4px 8px', marginLeft: '-8px' }}
@@ -141,7 +270,7 @@ import RichTextEditor from './RichTextEditor';
               </h1>
             ) : (
               <div style={{ marginBottom: '16px' }}>
-                <input 
+                <input
                   type="text"
                   value={tempTitle}
                   onChange={(e) => setTempTitle(e.target.value)}
@@ -185,15 +314,15 @@ import RichTextEditor from './RichTextEditor';
               <h3 style={{ fontSize: '11px', fontWeight: 600, color: '#5E6C84', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                 Description
               </h3>
-              
+
               {!isDescriptionEditing ? (
-                <div 
+                <div
                   className="group cursor-text hover:bg-[#F4F5F7] transition-colors"
                   style={{ padding: '12px 16px', border: '1px solid #DFE1E6', borderRadius: '4px', minHeight: '100px', backgroundColor: 'white' }}
                   onClick={() => setIsDescriptionEditing(true)}
                 >
                   {localTask.description ? (
-                    <div 
+                    <div
                       style={{ fontSize: '14px', lineHeight: '1.6', color: '#172B4D' }}
                       dangerouslySetInnerHTML={{ __html: localTask.description }}
                     />
@@ -213,7 +342,7 @@ import RichTextEditor from './RichTextEditor';
                     tasks={tasks}
                   />
                   <div className="flex gap-2">
-                    <button 
+                    <button
                       onClick={() => {
                         setLocalTask(prev => ({ ...prev, description: tempDescription }));
                         setIsDescriptionEditing(false);
@@ -223,7 +352,7 @@ import RichTextEditor from './RichTextEditor';
                     >
                       Save
                     </button>
-                    <button 
+                    <button
                       onClick={() => {
                         setTempDescription(localTask.description || '');
                         setIsDescriptionEditing(false);
@@ -245,7 +374,7 @@ import RichTextEditor from './RichTextEditor';
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {/* Attachment 1 */}
-                <div 
+                <div
                   className="flex items-center gap-3 group cursor-pointer hover:bg-[#F4F5F7] transition-colors"
                   style={{ padding: '10px 14px', border: '1px solid #DFE1E6', borderRadius: '6px' }}
                 >
@@ -260,7 +389,7 @@ import RichTextEditor from './RichTextEditor';
                 </div>
 
                 {/* Attachment 2 */}
-                <div 
+                <div
                   className="flex items-center gap-3 group cursor-pointer hover:bg-[#F4F5F7] transition-colors"
                   style={{ padding: '10px 14px', border: '1px solid #DFE1E6', borderRadius: '6px' }}
                 >
@@ -279,7 +408,7 @@ import RichTextEditor from './RichTextEditor';
             {/* ── Activity Tabs ── */}
             <div>
               <div className="flex items-center gap-6" style={{ borderBottom: '2px solid #F4F5F7', marginBottom: '20px' }}>
-                <button 
+                <button
                   onClick={() => setActiveTab('comments')}
                   style={{
                     fontSize: '13px',
@@ -295,7 +424,7 @@ import RichTextEditor from './RichTextEditor';
                 >
                   Comments
                 </button>
-                <button 
+                <button
                   onClick={() => setActiveTab('history')}
                   style={{
                     fontSize: '13px',
@@ -318,7 +447,7 @@ import RichTextEditor from './RichTextEditor';
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                   {/* Existing Comment */}
                   <div className="flex gap-3">
-                    <div 
+                    <div
                       className="shrink-0 flex items-center justify-center"
                       style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#DFE1E6', fontSize: '11px', fontWeight: 700, color: '#42526E' }}
                     >
@@ -342,14 +471,14 @@ import RichTextEditor from './RichTextEditor';
                   {/* Comment Editor */}
                   <div className="flex flex-col gap-3" style={{ paddingTop: '8px' }}>
                     {!isCommentEditing ? (
-                      <div 
+                      <div
                         className="flex-1 cursor-text hover:bg-[#F4F5F7] transition-colors"
-                        style={{ 
-                          padding: '10px 14px', 
-                          border: '2px solid #DFE1E6', 
-                          borderRadius: '3px', 
-                          fontSize: '13px', 
-                          color: '#6B778C', 
+                        style={{
+                          padding: '10px 14px',
+                          border: '2px solid #DFE1E6',
+                          borderRadius: '3px',
+                          fontSize: '13px',
+                          color: '#6B778C',
                           backgroundColor: '#FAFBFC',
                           minHeight: '40px',
                           display: 'flex',
@@ -368,7 +497,7 @@ import RichTextEditor from './RichTextEditor';
                           tasks={tasks}
                         />
                         <div className="flex gap-2">
-                          <button 
+                          <button
                             onClick={() => {
                               // Logic to save comment would go here
                               setIsCommentEditing(false);
@@ -379,7 +508,7 @@ import RichTextEditor from './RichTextEditor';
                           >
                             Save
                           </button>
-                          <button 
+                          <button
                             onClick={() => {
                               setIsCommentEditing(false);
                               setTempComment('');
@@ -399,33 +528,63 @@ import RichTextEditor from './RichTextEditor';
               {/* History View */}
               {activeTab === 'history' && (
                 <div>
-                  <div 
-                    className="flex items-center gap-2 flex-wrap"
-                    style={{ borderLeft: '2px solid #DFE1E6', marginLeft: '16px', paddingLeft: '16px', paddingTop: '8px', paddingBottom: '8px', fontSize: '13px', color: '#172B4D' }}
-                  >
-                    <span style={{ fontWeight: 700 }}>John Doe</span> 
-                    <span style={{ color: '#5E6C84' }}>updated status to</span>
-                    <span style={{ 
-                      padding: '2px 8px', 
-                      backgroundColor: '#E0E8FF', 
-                      color: '#003d9b', 
-                      borderRadius: '3px', 
-                      fontSize: '10px', 
-                      fontWeight: 700, 
-                      textTransform: 'uppercase',
-                      whiteSpace: 'nowrap'
-                    }}>
-                      {task.status}
-                    </span>
-                    <span className="ml-auto" style={{ fontSize: '11px', color: '#6B778C' }}>2 hours ago</span>
-                  </div>
+                  {assignHistory.length === 0 ? (
+                    <div style={{ color: '#6B778C', fontSize: '13px', padding: '12px 8px' }}>No assignment changes yet.</div>
+                  ) : (
+                    <div className="flex flex-col gap-4">
+                      {sortAssignHistory(assignHistory).map(entry => {
+                        const previousName = getHistoryName(entry, 'previous_assignee');
+                        const nextName = getHistoryName(entry, 'new_assignee');
+                        const changedByName = getChangedByName(entry);
+                        const prevProfile = getAssigneeProfile(previousName);
+                        const nextProfile = getAssigneeProfile(nextName);
+                        return (
+                          <div key={entry.assignment_history_id || entry.id} style={{ padding: '8px 0', borderBottom: '1px solid #F4F5F7' }}>
+                            <div className="flex items-start gap-3">
+                              <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#009b72', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700, color: '#FFFFFF', flexShrink: 0 }}>
+                                {getInitials(changedByName)}
+                              </div>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                                  <span style={{ fontSize: '13px', fontWeight: 700, color: '#172B4D' }}>{changedByName}</span>
+                                  <span style={{ fontSize: '12px', color: '#6B778C' }}>changed the Assignee</span>
+                                </div>
+                                <div style={{ fontSize: '11px', color: '#6B778C', marginTop: '2px' }}>{formatHistoryTime(entry.changed_at)}</div>
+                                <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: prevProfile.color, color: prevProfile.textColor || '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 700 }}>{prevProfile.initials}</div>
+                                    <div style={{ fontSize: '13px', color: previousName === 'Unassigned' ? '#6B778C' : '#172B4D' }}>{previousName}</div>
+                                  </div>
+                                  <div style={{ fontSize: '14px', color: '#9AA6B2' }}>→</div>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: nextProfile.color, color: nextProfile.textColor || '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 700 }}>{nextProfile.initials}</div>
+                                    <div style={{ fontSize: '13px', color: nextName === 'Unassigned' ? '#6B778C' : '#172B4D' }}>{nextName}</div>
+                                  </div>
+                                </div>
+                                {entry.reason && (
+                                  <div style={{ marginTop: '8px', fontSize: '12px', color: '#42526E', lineHeight: 1.5 }}>
+                                    {entry.reason}
+                                  </div>
+                                )}
+                                {entry.change_status && (
+                                  <div style={{ marginTop: '8px', display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: '3px', backgroundColor: '#F2F4F7', color: '#475467', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase' }}>
+                                    {entry.change_status}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
           </main>
 
           {/* ── Right Sidebar ── */}
-          <aside 
+          <aside
             className="overflow-y-auto custom-scrollbar shrink-0"
             style={{ width: '340px', borderLeft: '2px solid #F4F5F7', padding: '24px', backgroundColor: '#FAFBFC' }}
           >
@@ -441,18 +600,50 @@ import RichTextEditor from './RichTextEditor';
                 <label style={{ fontSize: '11px', fontWeight: 600, color: '#5E6C84', display: 'block', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                   Assignee
                 </label>
-                <div 
-                  className="flex items-center gap-2.5 group cursor-pointer rounded hover:bg-[#F4F5F7] transition-colors"
-                  style={{ padding: '6px 4px', marginLeft: '-4px' }}
+                <div
+                  className="relative"
+                  onMouseEnter={() => setIsAssigneeOpen(true)}
+                  onMouseLeave={() => setIsAssigneeOpen(false)}
                 >
-                  <div 
-                    className="shrink-0 flex items-center justify-center"
-                    style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: '#4C2B74', color: '#fff', fontSize: '10px', fontWeight: 700 }}
-                  >
-                    {getInitials(task.assignee)}
-                  </div>
-                  <span style={{ fontSize: '12px', fontWeight: 600, color: '#172B4D' }}>{task.assignee || 'Unassigned'}</span>
-                  <span className="material-symbols-outlined ml-auto opacity-0 group-hover:opacity-100 transition-opacity" style={{ fontSize: '16px', color: '#6B778C' }}>edit</span>
+                  {(() => {
+                    const profile = getAssigneeProfile(localTask.assignee);
+                    return (
+                      <>
+                        <div
+                          className="flex items-center gap-3 w-full rounded-none bg-white px-3 py-2 text-left transition-colors hover:bg-[#F4F5F7]"
+                        >
+                          <div
+                            className="shrink-0 flex items-center justify-center"
+                            style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: profile.color, color: profile.textColor || '#FFFFFF', fontSize: '10px', fontWeight: 700 }}
+                          >
+                            {profile.initials}
+                          </div>
+                          <span style={{ fontSize: '12px', fontWeight: 600, color: '#172B4D' }}>{localTask.assignee || 'Unassigned'}</span>
+                        </div>
+                        <div className={`absolute left-0 top-full z-50 mt-2 w-full rounded-none border border-outline-variant bg-white shadow-2xl transition-all duration-150 overflow-hidden ${isAssigneeOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}`}>
+                          {availableAssignees.map(user => (
+                            <button
+                              key={user.name}
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleAssigneeChange(user);
+                              }}
+                              className="w-full flex items-center gap-3 px-3 py-2 text-left text-[12px] hover:bg-[#EBF0FF] transition-colors"
+                            >
+                              <div
+                                className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold"
+                                style={{ backgroundColor: user.color, color: user.textColor || '#111' }}
+                              >
+                                {user.initials || <span className="material-symbols-outlined">{user.icon}</span>}
+                              </div>
+                              <span>{user.name}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
 
@@ -462,17 +653,16 @@ import RichTextEditor from './RichTextEditor';
                   Status
                 </label>
                 <div className="relative">
-                  <div 
+                  <div
                     className="status-custom-trigger"
                     style={{ padding: '4px 10px', border: '1px solid #DFE1E6', borderRadius: '4px', background: 'white' }}
                     onClick={() => setIsStatusOpen(!isStatusOpen)}
                   >
-                    <span className={`status-badge-pill ${
-                      (localTask?.status || '') === 'Need Revision' ? 'badge-revision' :
-                      (localTask?.status || '') === 'Done' ? 'badge-done' :
-                      ((localTask?.status || '') === 'Cancelled' || (localTask?.status || '') === 'New') ? 'badge-neutral' :
-                      'badge-progress'
-                    }`} style={{ fontSize: '11px' }}>
+                    <span className={`status-badge-pill ${(localTask?.status || '') === 'Need Revision' ? 'badge-revision' :
+                        (localTask?.status || '') === 'Done' ? 'badge-done' :
+                          ((localTask?.status || '') === 'Cancelled' || (localTask?.status || '') === 'New') ? 'badge-neutral' :
+                            'badge-progress'
+                      }`} style={{ fontSize: '11px' }}>
                       {(localTask?.status || 'IN PROGRESS').toUpperCase()}
                     </span>
                     <span className="material-symbols-outlined" style={{ fontSize: '16px', color: '#6B778C' }}>expand_more</span>
@@ -481,20 +671,19 @@ import RichTextEditor from './RichTextEditor';
                   {isStatusOpen && (
                     <div className="status-custom-dropdown" style={{ left: 0, width: '100%' }}>
                       {['New', 'In Progress', 'In Testing', 'Pending Review', 'Need Revision', 'Done', 'Cancelled'].map(s => (
-                        <div 
-                          key={s} 
+                        <div
+                          key={s}
                           className="status-dropdown-item"
                           onClick={() => {
                             setLocalTask(prev => ({ ...prev, status: s }));
                             setIsStatusOpen(false);
                           }}
                         >
-                          <span className={`status-badge-pill ${
-                            s === 'Need Revision' ? 'badge-revision' :
-                            s === 'Done' ? 'badge-done' :
-                            (s === 'Cancelled' || s === 'New') ? 'badge-neutral' :
-                            'badge-progress'
-                          }`} style={{ fontSize: '10px' }}>
+                          <span className={`status-badge-pill ${s === 'Need Revision' ? 'badge-revision' :
+                              s === 'Done' ? 'badge-done' :
+                                (s === 'Cancelled' || s === 'New') ? 'badge-neutral' :
+                                  'badge-progress'
+                            }`} style={{ fontSize: '10px' }}>
                             {s.toUpperCase()}
                           </span>
                         </div>
@@ -510,7 +699,7 @@ import RichTextEditor from './RichTextEditor';
                   Priority
                 </label>
                 <div className="relative">
-                  <div 
+                  <div
                     className="priority-custom-trigger"
                     style={{ padding: '6px 10px', borderRadius: '4px', border: '1px solid #DFE1E6' }}
                     onClick={() => setIsPriorityOpen(!isPriorityOpen)}
@@ -535,8 +724,8 @@ import RichTextEditor from './RichTextEditor';
                         { label: 'Medium', icon: 'keyboard_double_arrow_up', color: '#FF8B00' },
                         { label: 'Low', icon: 'keyboard_arrow_down', color: '#4C2B74' }
                       ].map(p => (
-                        <div 
-                          key={p.label} 
+                        <div
+                          key={p.label}
                           className="priority-dropdown-item flex items-center gap-3"
                           onClick={() => {
                             setLocalTask(prev => ({ ...prev, priority: p.label }));
@@ -559,18 +748,18 @@ import RichTextEditor from './RichTextEditor';
               <div className="flex justify-between items-center group cursor-pointer" style={{ marginBottom: '16px' }}>
                 <span style={{ fontSize: '11px', fontWeight: 600, color: '#5E6C84', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Story Points</span>
                 <div className="flex items-center gap-2">
-                  <input 
+                  <input
                     type="number"
                     value={localTask?.pts || 0}
                     onChange={(e) => setLocalTask(prev => ({ ...prev, pts: parseInt(e.target.value) || 0 }))}
                     className="story-points-input"
-                    style={{ 
-                      width: '45px', 
-                      padding: '2px 4px', 
-                      border: '1px solid #DFE1E6', 
-                      borderRadius: '3px', 
-                      fontSize: '12px', 
-                      fontWeight: 700, 
+                    style={{
+                      width: '45px',
+                      padding: '2px 4px',
+                      border: '1px solid #DFE1E6',
+                      borderRadius: '3px',
+                      fontSize: '12px',
+                      fontWeight: 700,
                       color: '#172B4D',
                       textAlign: 'center',
                       outline: 'none',
@@ -604,8 +793,8 @@ import RichTextEditor from './RichTextEditor';
               <div className="flex justify-between items-center" style={{ marginBottom: '16px' }}>
                 <span style={{ fontSize: '11px', fontWeight: 600, color: '#5E6C84', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Completed</span>
                 <div className="relative">
-                  <div 
-                    className="flex items-center gap-1.5 cursor-pointer hover:bg-[#F4F5F7] rounded px-2 py-1 transition-colors" 
+                  <div
+                    className="flex items-center gap-1.5 cursor-pointer hover:bg-[#F4F5F7] rounded px-2 py-1 transition-colors"
                     style={{ fontSize: '12px', fontWeight: 600, color: '#172B4D' }}
                     onClick={() => setIsCompletedOpen(!isCompletedOpen)}
                   >
@@ -617,14 +806,14 @@ import RichTextEditor from './RichTextEditor';
                     <div className="calendar-dropdown-container" style={{ right: 0, left: 'auto', top: '100%', padding: '12px', width: '280px' }}>
                       <div className="calendar-header flex items-center justify-between mb-4">
                         <div className="flex gap-2">
-                          <span 
+                          <span
                             onClick={(e) => { e.stopPropagation(); setCompletedYear(y => y - 1); }}
-                            className="material-symbols-outlined cursor-pointer hover:text-[#4C2B74]" 
+                            className="material-symbols-outlined cursor-pointer hover:text-[#4C2B74]"
                             style={{ fontSize: '18px' }}
                           >
                             keyboard_double_arrow_left
                           </span>
-                          <span 
+                          <span
                             onClick={(e) => {
                               e.stopPropagation();
                               setCompletedMonth(m => {
@@ -635,7 +824,7 @@ import RichTextEditor from './RichTextEditor';
                                 return m - 1;
                               });
                             }}
-                            className="material-symbols-outlined cursor-pointer hover:text-[#4C2B74]" 
+                            className="material-symbols-outlined cursor-pointer hover:text-[#4C2B74]"
                             style={{ fontSize: '18px' }}
                           >
                             chevron_left
@@ -643,7 +832,7 @@ import RichTextEditor from './RichTextEditor';
                         </div>
                         <span className="font-bold text-[#172B4D] text-sm">{monthNames[completedMonth]} {completedYear}</span>
                         <div className="flex gap-2">
-                          <span 
+                          <span
                             onClick={(e) => {
                               e.stopPropagation();
                               setCompletedMonth(m => {
@@ -654,14 +843,14 @@ import RichTextEditor from './RichTextEditor';
                                 return m + 1;
                               });
                             }}
-                            className="material-symbols-outlined cursor-pointer hover:text-[#4C2B74]" 
+                            className="material-symbols-outlined cursor-pointer hover:text-[#4C2B74]"
                             style={{ fontSize: '18px' }}
                           >
                             chevron_right
                           </span>
-                          <span 
+                          <span
                             onClick={(e) => { e.stopPropagation(); setCompletedYear(y => y + 1); }}
-                            className="material-symbols-outlined cursor-pointer hover:text-[#4C2B74]" 
+                            className="material-symbols-outlined cursor-pointer hover:text-[#4C2B74]"
                             style={{ fontSize: '18px' }}
                           >
                             keyboard_double_arrow_right
@@ -680,15 +869,15 @@ import RichTextEditor from './RichTextEditor';
                             // Check if current day is selected
                             const isSelected = localTask.date && (() => {
                               const d = new Date(localTask.date);
-                              return !isNaN(d.getTime()) && 
-                                d.getDate() === day && 
-                                d.getMonth() === completedMonth && 
+                              return !isNaN(d.getTime()) &&
+                                d.getDate() === day &&
+                                d.getMonth() === completedMonth &&
                                 d.getFullYear() === completedYear;
                             })();
                             const isToday = day === 24 && completedMonth === 5 && completedYear === 2026;
                             return (
-                              <div 
-                                key={i} 
+                              <div
+                                key={i}
                                 className={`calendar-day ${isToday ? 'today' : ''}`}
                                 style={{
                                   height: '32px',
@@ -730,7 +919,7 @@ import RichTextEditor from './RichTextEditor';
                 <div className="flex flex-col gap-3.5">
                   <div className="flex justify-between items-center relative">
                     <span style={{ fontSize: '11px', fontWeight: 600, color: '#5E6C84', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Created</span>
-                    <span 
+                    <span
                       className="cursor-pointer hover:text-[#4C2B74] transition-colors"
                       style={{ fontSize: '12px', fontWeight: 600, color: '#172B4D' }}
                       onClick={() => setIsCreatedOpen(!isCreatedOpen)}
@@ -742,14 +931,14 @@ import RichTextEditor from './RichTextEditor';
                       <div className="calendar-dropdown-container" style={{ right: 0, top: '100%', padding: '12px', width: '280px', zIndex: 100 }}>
                         <div className="calendar-header flex items-center justify-between mb-4">
                           <div className="flex gap-2">
-                            <span 
+                            <span
                               onClick={(e) => { e.stopPropagation(); setCreatedYear(y => y - 1); }}
-                              className="material-symbols-outlined cursor-pointer hover:text-[#4C2B74]" 
+                              className="material-symbols-outlined cursor-pointer hover:text-[#4C2B74]"
                               style={{ fontSize: '18px' }}
                             >
                               keyboard_double_arrow_left
                             </span>
-                            <span 
+                            <span
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setCreatedMonth(m => {
@@ -760,7 +949,7 @@ import RichTextEditor from './RichTextEditor';
                                   return m - 1;
                                 });
                               }}
-                              className="material-symbols-outlined cursor-pointer hover:text-[#4C2B74]" 
+                              className="material-symbols-outlined cursor-pointer hover:text-[#4C2B74]"
                               style={{ fontSize: '18px' }}
                             >
                               chevron_left
@@ -768,7 +957,7 @@ import RichTextEditor from './RichTextEditor';
                           </div>
                           <span className="font-bold text-[#172B4D] text-sm">{monthNames[createdMonth]} {createdYear}</span>
                           <div className="flex gap-2">
-                            <span 
+                            <span
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setCreatedMonth(m => {
@@ -779,14 +968,14 @@ import RichTextEditor from './RichTextEditor';
                                   return m + 1;
                                 });
                               }}
-                              className="material-symbols-outlined cursor-pointer hover:text-[#4C2B74]" 
+                              className="material-symbols-outlined cursor-pointer hover:text-[#4C2B74]"
                               style={{ fontSize: '18px' }}
                             >
                               chevron_right
                             </span>
-                            <span 
+                            <span
                               onClick={(e) => { e.stopPropagation(); setCreatedYear(y => y + 1); }}
-                              className="material-symbols-outlined cursor-pointer hover:text-[#4C2B74]" 
+                              className="material-symbols-outlined cursor-pointer hover:text-[#4C2B74]"
                               style={{ fontSize: '18px' }}
                             >
                               keyboard_double_arrow_right
@@ -804,15 +993,15 @@ import RichTextEditor from './RichTextEditor';
                               if (day === null) return <div key={`empty-${i}`} style={{ height: '32px' }} />;
                               const isSelected = localTask.createdAt && (() => {
                                 const d = new Date(localTask.createdAt);
-                                return !isNaN(d.getTime()) && 
-                                  d.getDate() === day && 
-                                  d.getMonth() === createdMonth && 
+                                return !isNaN(d.getTime()) &&
+                                  d.getDate() === day &&
+                                  d.getMonth() === createdMonth &&
                                   d.getFullYear() === createdYear;
                               })();
                               const isToday = day === 24 && createdMonth === 5 && createdYear === 2026;
                               return (
-                                <div 
-                                  key={i} 
+                                <div
+                                  key={i}
                                   className={`calendar-day ${isToday ? 'today' : ''}`}
                                   style={{
                                     height: '32px',
@@ -841,7 +1030,7 @@ import RichTextEditor from './RichTextEditor';
                       </div>
                     )}
                   </div>
-                  
+
                   <div className="flex justify-between items-center">
                     <span style={{ fontSize: '11px', fontWeight: 600, color: '#5E6C84', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Updated</span>
                     <span style={{ fontSize: '12px', fontWeight: 600, color: '#172B4D', paddingRight: '2px' }}>{localTask?.updated_at || '2 mins ago'}</span>
@@ -850,7 +1039,7 @@ import RichTextEditor from './RichTextEditor';
                   <div className="flex justify-between items-center" style={{ marginTop: '2px' }}>
                     <span style={{ fontSize: '11px', fontWeight: 600, color: '#5E6C84', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Reporter</span>
                     <div className="flex items-center gap-2">
-                      <div 
+                      <div
                         className="flex items-center justify-center"
                         style={{ width: '20px', height: '20px', borderRadius: '50%', backgroundColor: '#DFE1E6', fontSize: '10px', fontWeight: 700, color: '#42526E' }}
                       >
