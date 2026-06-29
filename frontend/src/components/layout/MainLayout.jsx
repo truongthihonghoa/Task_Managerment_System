@@ -1,13 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import { Outlet, Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import taskflowLogo from '../../assets/taskflow-logo.png';
 import CreateTaskModal from '../tasks/CreateTaskModal';
  
 export default function MainLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [tasksForModal, setTasksForModal] = useState([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const roleParam = searchParams.get('role')?.toUpperCase();
+  const currentRole = roleParam === 'USER' ? 'USER' : 'ADMIN';
+
   // Tự động kích hoạt Lucide Icons từ CDN khi component mount
   useEffect(() => {
     if (window.lucide) {
@@ -110,7 +115,7 @@ export default function MainLayout() {
             <span className="text-sm font-medium">Profile</span>
           </Link>
  
-          <Link className="flex items-center px-4 py-3 text-[#6B7280] hover:bg-gray-50 rounded-xl transition-colors justify-between" to="#">
+          <Link className="flex items-center px-4 py-3 text-[#6B7280] hover:bg-gray-50 rounded-xl transition-colors justify-between" to="/dashboard/notifications">
             <div className="flex items-center">
               <i className="w-5 h-5 mr-3" data-lucide="bell"></i>
               <span className="text-sm font-medium">Notifications</span>
@@ -125,7 +130,7 @@ export default function MainLayout() {
             <i className="w-5 h-5 mr-3" data-lucide="help-circle"></i>
             <span className="text-sm font-medium">Help</span>
           </Link>
-          <Link className="flex items-center px-4 py-3 text-[#6B7280] hover:bg-gray-50 rounded-xl transition-colors" to="#">
+          <Link className="flex items-center px-4 py-3 text-[#6B7280] hover:bg-gray-50 rounded-xl transition-colors" to="/dashboard/notification-settings">
             <i className="w-5 h-5 mr-3" data-lucide="settings"></i>
             <span className="text-sm font-medium">Settings</span>
           </Link>
@@ -174,7 +179,10 @@ export default function MainLayout() {
             </button>
  
             {/* Notification Bell */}
-            <button className="relative text-gray-500 hover:text-gray-700">
+            <button
+              onClick={() => navigate('/dashboard/notifications')}
+              className="relative text-gray-500 hover:text-gray-700"
+            >
               <i className="w-6 h-6" data-lucide="bell"></i>
             </button>
  
