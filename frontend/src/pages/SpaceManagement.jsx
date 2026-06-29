@@ -4,6 +4,7 @@ import CreateSpaceModal from '../components/tasks/CreateSpaceModal';
  
 const SpaceManagement = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState('Recently Created');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -233,7 +234,7 @@ const SpaceManagement = () => {
  
             <div className="p-4 bg-gray-50/50 border-t border-gray-100">
               <button
-                onClick={() => navigate(`/dashboard/tasks/${space.id}`)}
+                onClick={() => navigate(`/dashboard/tasks/${space.id}${location.search}`)}
                 className={`w-full py-2.5 rounded-lg font-bold text-[12px] transition-all shadow-sm ${space.status === 'Active'
                     ? 'bg-[#4C2B74] text-white hover:bg-[#3D225E]'
                     : 'bg-[#f0edff] text-[#5e4db2] border border-[#e6e1ff] hover:bg-[#e6e1ff]'

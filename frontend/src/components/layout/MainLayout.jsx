@@ -41,7 +41,7 @@ export default function MainLayout() {
         {/* Logo Section */}
         <div className="p-6 flex items-center space-x-3">
           <div className="w-10 h-10 bg-[#2D1B4E] rounded-lg flex items-center justify-center border-[3px] border-[#2D1B4E] overflow-hidden">
-            <img alt="TaskFlow Logo" className="w-[50px] h-[50px] max-w-none object-contain scale-[1.35]" src={taskflowLogo}/>
+            <img alt="TaskFlow Logo" className="w-[50px] h-[50px] max-w-none object-contain scale-[1.35]" src={taskflowLogo} />
           </div>
           <div>
             <h1 className="text-[#2D1B4E] font-bold text-sm leading-tight">TaskFlow</h1>
@@ -179,13 +179,13 @@ export default function MainLayout() {
             </button>
  
             {/* User Profile */}
-            <div className="flex items-center space-x-3 border-l pl-6 border-gray-200">
+            <div className="flex items-center space-x-3 border-l pl-6 border-gray-200 font-['Inter']">
               <div className="w-10 h-10 rounded-full bg-purple-100 border border-[#2D1B4E] flex items-center justify-center overflow-hidden">
                 <div className="w-full h-full bg-gradient-to-tr from-purple-200 to-indigo-100 flex items-center justify-center">
-                  <span className="text-[#2D1B4E] text-xs font-bold">AM</span>
+                  <span className="text-[#2D1B4E] text-xs font-bold">{currentRole === 'ADMIN' ? 'AM' : 'TN'}</span>
                 </div>
               </div>
-              <span className="text-sm font-semibold text-gray-800">Alex Morgan</span>
+              <span className="text-sm font-semibold text-gray-800">{currentRole === 'ADMIN' ? 'Alex Morgan' : 'Trang Nguyễn'}</span>
             </div>
           </div>
         </header>

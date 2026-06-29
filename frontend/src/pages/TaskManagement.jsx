@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { useNavigate, useOutletContext } from 'react-router-dom';
+import { useNavigate, useOutletContext, useLocation } from 'react-router-dom';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import SprintInfoPopover from '../components/tasks/SprintInfoPopover';
 import CompleteSprintModal from '../components/tasks/CompleteSprintModal';
@@ -9,6 +9,7 @@ import DeleteTaskModal from '../components/tasks/DeleteTaskModal';
 
 export default function TaskManagement() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { setShowCreateModal, setTasksForModal } = useOutletContext() || {};
   const [view, setView] = useState('list');
   const [selectedTasks, setSelectedTasks] = useState([]);
@@ -162,9 +163,9 @@ export default function TaskManagement() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
           <div className="flex items-center text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">
-            <span className="hover:text-primary cursor-pointer transition-colors" onClick={() => navigate('/mainlayout')}>Tasks</span>
+            <span className="hover:text-primary cursor-pointer transition-colors" onClick={() => navigate(`/dashboard/spaces${location.search}`)}>Tasks</span>
             <i className="w-3 h-3 mx-2 text-gray-400 material-symbols-outlined text-[12px]">chevron_right</i>
-            <span className="hover:text-primary cursor-pointer transition-colors" onClick={() => navigate('/mainlayout')}>Space Management</span>
+            <span className="hover:text-primary cursor-pointer transition-colors" onClick={() => navigate(`/dashboard/spaces${location.search}`)}>Space Management</span>
           </div>
           <h1 className="text-base font-bold text-[#5e4db2]">Task Management</h1>
         </div>

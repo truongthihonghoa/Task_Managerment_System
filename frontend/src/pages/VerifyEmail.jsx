@@ -54,7 +54,7 @@ export default function VerifyEmail() {
   };
 
   return (
-    <div className="bg-[#F9FAFB] min-h-screen flex flex-col font-sans antialiased">
+    <div className="bg-surface min-h-screen flex flex-col font-sans antialiased">
       {/* Khối nội dung chính - ĐÃ ĐỒNG BỘ CHUẨN LOGIN: flex items-center justify-center p-6 */}
       <main className="flex-grow flex items-center justify-center p-6">
         {/* Card wrapper - p-8 md:p-12 tương tự LoginPage */}
@@ -127,17 +127,6 @@ export default function VerifyEmail() {
 
         </section>
       </main>
-
-      {/* Page Footer */}
-      <footer className="p-6 md:px-12 flex flex-col md:flex-row justify-between items-center text-[11px] text-gray-400 border-t border-gray-100 bg-white">
-        <div className="mb-2 md:mb-0">
-          © 2026 TaskFlow Enterprise. All rights reserved.
-        </div>
-        <div className="flex space-x-6">
-          <a className="hover:text-gray-600 transition-colors" href="#">Privacy Policy</a>
-          <a className="hover:text-gray-600 transition-colors" href="#">Terms of Service</a>
-        </div>
-      </footer>
     </div>
   );
 }
