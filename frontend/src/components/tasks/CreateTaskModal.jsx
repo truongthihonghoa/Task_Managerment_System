@@ -28,24 +28,6 @@ const CreateTaskModal = ({ isOpen, onClose, tasks = [] }) => {
   const [isSprintOpen, setIsSprintOpen] = useState(false);
   const [onlyShowCurrentSpace, setOnlyShowCurrentSpace] = useState(true);
 
-  const [createdMonth, setCreatedMonth] = useState(5);
-  const [createdYear, setCreatedYear] = useState(2026);
-  const [updatedMonth, setUpdatedMonth] = useState(5);
-  const [updatedYear, setUpdatedYear] = useState(2026);
-  const [completedMonth, setCompletedMonth] = useState(5);
-  const [completedYear, setCompletedYear] = useState(2026);
-
-  const getDaysInMonth = (year, month) => {
-    const days = [];
-    const startDay = new Date(year, month, 1).getDay();
-    const numDays = new Date(year, month + 1, 0).getDate();
-    for (let i = 0; i < startDay; i++) days.push(null);
-    for (let d = 1; d <= numDays; d++) days.push(d);
-    return days;
-  };
-
-  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-
   useEffect(() => {
     if (isOpen && window.lucide) {
       window.lucide.createIcons();
@@ -270,55 +252,13 @@ const CreateTaskModal = ({ isOpen, onClose, tasks = [] }) => {
                     <div className="calendar-dropdown-container">
                       <div className="calendar-header">
                         <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); setCreatedYear(y => y - 1); }}
-                            className="hover:text-primary transition-colors flex items-center justify-center p-0.5 cursor-pointer"
-                          >
-                            <i data-lucide="chevrons-left" className="w-4 h-4"></i>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setCreatedMonth(m => {
-                                if (m === 0) {
-                                  setCreatedYear(y => y - 1);
-                                  return 11;
-                                }
-                                return m - 1;
-                              });
-                            }}
-                            className="hover:text-primary transition-colors flex items-center justify-center p-0.5 cursor-pointer"
-                          >
-                            <i data-lucide="chevron-left" className="w-4 h-4"></i>
-                          </button>
+                          <i data-lucide="chevrons-left" className="w-4 h-4 cursor-pointer hover:text-primary"></i>
+                          <i data-lucide="chevron-left" className="w-4 h-4 cursor-pointer hover:text-primary"></i>
                         </div>
-                        <span className="font-bold text-sm">{monthNames[createdMonth]} {createdYear}</span>
+                        <span className="font-bold text-sm">June 2026</span>
                         <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setCreatedMonth(m => {
-                                if (m === 11) {
-                                  setCreatedYear(y => y + 1);
-                                  return 0;
-                                }
-                                return m + 1;
-                              });
-                            }}
-                            className="hover:text-primary transition-colors flex items-center justify-center p-0.5 cursor-pointer"
-                          >
-                            <i data-lucide="chevron-right" className="w-4 h-4"></i>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); setCreatedYear(y => y + 1); }}
-                            className="hover:text-primary transition-colors flex items-center justify-center p-0.5 cursor-pointer"
-                          >
-                            <i data-lucide="chevrons-right" className="w-4 h-4"></i>
-                          </button>
+                          <i data-lucide="chevron-right" className="w-4 h-4 cursor-pointer hover:text-primary"></i>
+                          <i data-lucide="chevrons-right" className="w-4 h-4 cursor-pointer hover:text-primary"></i>
                         </div>
                       </div>
                       <div className="calendar-body">
@@ -326,10 +266,9 @@ const CreateTaskModal = ({ isOpen, onClose, tasks = [] }) => {
                           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => <div key={d} className="text-center">{d}</div>)}
                         </div>
                         <div className="grid grid-cols-7 gap-1">
-                          {getDaysInMonth(createdYear, createdMonth).map((day, i) => {
-                            if (day === null) return <div key={`empty-${i}`} className="calendar-day empty" />;
-                            const dateStr = `${createdYear}-${String(createdMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                            const isSelected = formData.createdAt === dateStr;
+                          {Array.from({ length: 30 }).map((_, i) => {
+                            const day = i + 1;
+                            const isSelected = day === 25;
                             return (
                               <div 
                                 key={i} 
@@ -337,7 +276,7 @@ const CreateTaskModal = ({ isOpen, onClose, tasks = [] }) => {
                                 onClick={() => {
                                   setFormData(prev => ({
                                     ...prev,
-                                    createdAt: dateStr
+                                    createdAt: `2026-06-${day.toString().padStart(2, '0')}`
                                   }));
                                   setIsCreatedAtOpen(false);
                                 }}
@@ -371,55 +310,13 @@ const CreateTaskModal = ({ isOpen, onClose, tasks = [] }) => {
                     <div className="calendar-dropdown-container">
                       <div className="calendar-header">
                         <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); setUpdatedYear(y => y - 1); }}
-                            className="hover:text-primary transition-colors flex items-center justify-center p-0.5 cursor-pointer"
-                          >
-                            <i data-lucide="chevrons-left" className="w-4 h-4"></i>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setUpdatedMonth(m => {
-                                if (m === 0) {
-                                  setUpdatedYear(y => y - 1);
-                                  return 11;
-                                }
-                                return m - 1;
-                              });
-                            }}
-                            className="hover:text-primary transition-colors flex items-center justify-center p-0.5 cursor-pointer"
-                          >
-                            <i data-lucide="chevron-left" className="w-4 h-4"></i>
-                          </button>
+                          <i data-lucide="chevrons-left" className="w-4 h-4 cursor-pointer hover:text-primary"></i>
+                          <i data-lucide="chevron-left" className="w-4 h-4 cursor-pointer hover:text-primary"></i>
                         </div>
-                        <span className="font-bold text-sm">{monthNames[updatedMonth]} {updatedYear}</span>
+                        <span className="font-bold text-sm">June 2026</span>
                         <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setUpdatedMonth(m => {
-                                if (m === 11) {
-                                  setUpdatedYear(y => y + 1);
-                                  return 0;
-                                }
-                                return m + 1;
-                              });
-                            }}
-                            className="hover:text-primary transition-colors flex items-center justify-center p-0.5 cursor-pointer"
-                          >
-                            <i data-lucide="chevron-right" className="w-4 h-4"></i>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); setUpdatedYear(y => y + 1); }}
-                            className="hover:text-primary transition-colors flex items-center justify-center p-0.5 cursor-pointer"
-                          >
-                            <i data-lucide="chevrons-right" className="w-4 h-4"></i>
-                          </button>
+                          <i data-lucide="chevron-right" className="w-4 h-4 cursor-pointer hover:text-primary"></i>
+                          <i data-lucide="chevrons-right" className="w-4 h-4 cursor-pointer hover:text-primary"></i>
                         </div>
                       </div>
                       <div className="calendar-body">
@@ -427,10 +324,9 @@ const CreateTaskModal = ({ isOpen, onClose, tasks = [] }) => {
                           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => <div key={d} className="text-center">{d}</div>)}
                         </div>
                         <div className="grid grid-cols-7 gap-1">
-                          {getDaysInMonth(updatedYear, updatedMonth).map((day, i) => {
-                            if (day === null) return <div key={`empty-${i}`} className="calendar-day empty" />;
-                            const dateStr = `${updatedYear}-${String(updatedMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                            const isSelected = formData.updated_at === dateStr;
+                          {Array.from({ length: 30 }).map((_, i) => {
+                            const day = i + 1;
+                            const isSelected = day === 25;
                             return (
                               <div 
                                 key={i} 
@@ -438,7 +334,7 @@ const CreateTaskModal = ({ isOpen, onClose, tasks = [] }) => {
                                 onClick={() => {
                                   setFormData(prev => ({
                                     ...prev,
-                                    updated_at: dateStr
+                                    updated_at: `2026-06-${day.toString().padStart(2, '0')}`
                                   }));
                                   setIsUpdatedAtOpen(false);
                                 }}
@@ -476,55 +372,13 @@ const CreateTaskModal = ({ isOpen, onClose, tasks = [] }) => {
                   <div className="calendar-dropdown-container">
                     <div className="calendar-header">
                       <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); setCompletedYear(y => y - 1); }}
-                          className="hover:text-primary transition-colors flex items-center justify-center p-0.5 cursor-pointer"
-                        >
-                          <i data-lucide="chevrons-left" className="w-4 h-4"></i>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setCompletedMonth(m => {
-                              if (m === 0) {
-                                  setCompletedYear(y => y - 1);
-                                  return 11;
-                                }
-                                return m - 1;
-                              });
-                            }}
-                          className="hover:text-primary transition-colors flex items-center justify-center p-0.5 cursor-pointer"
-                        >
-                          <i data-lucide="chevron-left" className="w-4 h-4"></i>
-                        </button>
+                        <i data-lucide="chevrons-left" className="w-4 h-4 cursor-pointer hover:text-primary"></i>
+                        <i data-lucide="chevron-left" className="w-4 h-4 cursor-pointer hover:text-primary"></i>
                       </div>
-                      <span className="font-bold text-sm">{monthNames[completedMonth]} {completedYear}</span>
+                      <span className="font-bold text-sm">June 2026</span>
                       <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setCompletedMonth(m => {
-                              if (m === 11) {
-                                setCompletedYear(y => y + 1);
-                                return 0;
-                              }
-                              return m + 1;
-                            });
-                          }}
-                          className="hover:text-primary transition-colors flex items-center justify-center p-0.5 cursor-pointer"
-                        >
-                          <i data-lucide="chevron-right" className="w-4 h-4"></i>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); setCompletedYear(y => y + 1); }}
-                          className="hover:text-primary transition-colors flex items-center justify-center p-0.5 cursor-pointer"
-                        >
-                          <i data-lucide="chevrons-right" className="w-4 h-4"></i>
-                        </button>
+                        <i data-lucide="chevron-right" className="w-4 h-4 cursor-pointer hover:text-primary"></i>
+                        <i data-lucide="chevrons-right" className="w-4 h-4 cursor-pointer hover:text-primary"></i>
                       </div>
                     </div>
                     <div className="calendar-body">
@@ -532,10 +386,9 @@ const CreateTaskModal = ({ isOpen, onClose, tasks = [] }) => {
                         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => <div key={d} className="text-center">{d}</div>)}
                       </div>
                       <div className="grid grid-cols-7 gap-1">
-                        {getDaysInMonth(completedYear, completedMonth).map((day, i) => {
-                          if (day === null) return <div key={`empty-${i}`} className="calendar-day empty" />;
-                          const dateStr = `${completedYear}-${String(completedMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                          const isSelected = formData.completed_at === dateStr;
+                        {Array.from({ length: 30 }).map((_, i) => {
+                          const day = i + 1;
+                          const isSelected = day === 25;
                           return (
                             <div 
                               key={i} 
@@ -543,7 +396,7 @@ const CreateTaskModal = ({ isOpen, onClose, tasks = [] }) => {
                               onClick={() => {
                                 setFormData(prev => ({
                                   ...prev,
-                                  completed_at: dateStr
+                                  completed_at: `2026-06-${day.toString().padStart(2, '0')}`
                                 }));
                                 setIsCompletedAtOpen(false);
                               }}
