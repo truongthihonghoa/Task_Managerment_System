@@ -1,4 +1,4 @@
- import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import '../../styles/CreateTaskModal.css';
 import RichTextEditor from './RichTextEditor';
 
@@ -14,32 +14,20 @@ import RichTextEditor from './RichTextEditor';
   const [localTask, setLocalTask] = useState(task || {});
   const [isDescriptionEditing , setIsDescriptionEditing] = useState(false);
   const [tempDescription, setTempDescription] = useState(task?.description || '');
+  const [pendingDescriptionAttachments, setPendingDescriptionAttachments] = useState([]);
+  const [previewAttachment, setPreviewAttachment] = useState(null);
+  const [previewZoom, setPreviewZoom] = useState(1);
+  const [baseMax, setBaseMax] = useState({ w: Math.max(600, window.innerWidth * 0.7), h: Math.max(400, window.innerHeight * 0.7) });
+  const [naturalSize, setNaturalSize] = useState({ w: 0, h: 0 });
+  const [baseWidth, setBaseWidth] = useState(null);
+  const previewImgRef = React.useRef(null);
   const [isCommentEditing, setIsCommentEditing] = useState(false);
   const [tempComment, setTempComment] = useState('');
   const [replyToCommentId, setReplyToCommentId] = useState(null);
   const [editCommentId, setEditCommentId] = useState(null);
   const [deleteConfirmCommentId, setDeleteConfirmCommentId] = useState(null);
   const [isUploadAreaOpen, setIsUploadAreaOpen] = useState(false);
-  const [attachments, setAttachments] = useState(task?.attachments || [
-    {
-      id: 1,
-      name: 'user-flow.pdf',
-      size: '2.4 MB',
-      date: task?.date || 'Jun 20, 2026',
-      icon: 'picture_as_pdf',
-      color: '#DE350B',
-      bg: '#FFF5F5'
-    },
-    {
-      id: 2,
-      name: 'wireframes.zip',
-      size: '15.8 MB',
-      date: task?.date || 'Jun 21, 2026',
-      icon: 'folder_zip',
-      color: '#4C2B74',
-      bg: '#EBF5FF'
-    }
-  ]);
+  const [attachments, setAttachments] = useState(task?.attachments || []);
   const [comments, setComments] = useState(task?.comments || [
     {
       id: 1,
@@ -58,6 +46,8 @@ import RichTextEditor from './RichTextEditor';
   const [createdMonth, setCreatedMonth] = useState(5);
   const [createdYear, setCreatedYear] = useState(2026);
   const uploadInputRef = useRef(null);
+  const replaceInputRef = useRef(null);
+  const [replaceTargetId, setReplaceTargetId] = useState(null);
 
   const formatFileSize = (bytes) => {
     if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
@@ -88,12 +78,74 @@ import RichTextEditor from './RichTextEditor';
     });
   };
 
-  const addAttachments = (newAttachments) => {
+  const addAttachments = (newAttachments, options = { persistImmediately: true }) => {
     setAttachments(prev => {
       const next = [...prev, ...newAttachments];
+      if (options.persistImmediately) {
+        setLocalTask(prevTask => ({ ...prevTask, attachments: next }));
+        syncTask({ attachments: next });
+      }
+      return next;
+    });
+  };
+
+  const triggerReplace = (id) => {
+    setReplaceTargetId(id);
+    replaceInputRef.current?.click();
+  };
+
+  const handleReplaceFile = (e) => {
+    const file = e.target.files?.[0];
+    if (!file || replaceTargetId == null) return;
+    const newAtt = createAttachmentFromFile(file);
+    setAttachments(prev => {
+      const next = prev.map(a => a.id === replaceTargetId ? { ...a, name: newAtt.name, size: newAtt.size, date: newAtt.date, icon: newAtt.icon, color: newAtt.color, bg: newAtt.bg, type: newAtt.type, previewUrl: newAtt.previewUrl } : a);
+      setLocalTask(prevTask => ({ ...prevTask, attachments: next }));
       syncTask({ attachments: next });
       return next;
     });
+    setReplaceTargetId(null);
+    e.target.value = '';
+  };
+
+  const deleteAttachment = (id) => {
+    setAttachments(prev => {
+      const toDelete = prev.find(a => a.id === id);
+      if (toDelete && toDelete.previewUrl) {
+        try { URL.revokeObjectURL(toDelete.previewUrl); } catch(_){}
+      }
+      const next = prev.filter(a => a.id !== id);
+      // only remove from attachments list; do not alter description or comments
+      setLocalTask(prevTask => {
+        const updated = { ...prevTask, attachments: next };
+        if (onUpdateTask) onUpdateTask(updated);
+        return updated;
+      });
+      syncTask({ attachments: next });
+      return next;
+    });
+  };
+
+  const downloadAttachment = (att, e) => {
+    e?.stopPropagation();
+    if (!att) return;
+    // If previewUrl exists (client-side file), trigger download
+    if (att.previewUrl) {
+      try {
+        const a = document.createElement('a');
+        a.href = att.previewUrl;
+        a.download = att.name || 'download';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      } catch (err) {
+        // fallback: open in new tab
+        window.open(att.previewUrl, '_blank');
+      }
+    } else {
+      // No client preview URL available — attempt to open file URL if present
+      if (att.url) window.open(att.url, '_blank');
+    }
   };
 
   const handleFileUpload = (event) => {
@@ -107,7 +159,12 @@ import RichTextEditor from './RichTextEditor';
 
   const handleFileUploadObject = (file) => {
     if (!file) return;
-    addAttachments([createAttachmentFromFile(file)]);
+    const attachment = createAttachmentFromFile(file);
+    if (isDescriptionEditing) {
+      setPendingDescriptionAttachments(prev => [...prev, attachment]);
+    } else {
+      addAttachments([attachment]);
+    }
   };
 
   const openUploadDialog = () => {
@@ -144,26 +201,8 @@ import RichTextEditor from './RichTextEditor';
           parentId: null
         }
       ]);
-      setAttachments(task.attachments || [
-        {
-          id: 1,
-          name: 'user-flow.pdf',
-          size: '2.4 MB',
-          date: task?.date || 'Jun 20, 2026',
-          icon: 'picture_as_pdf',
-          color: '#DE350B',
-          bg: '#FFF5F5'
-        },
-        {
-          id: 2,
-          name: 'wireframes.zip',
-          size: '15.8 MB',
-          date: task?.date || 'Jun 21, 2026',
-          icon: 'folder_zip',
-          color: '#4C2B74',
-          bg: '#EBF5FF'
-        }
-      ]);
+      setAttachments(task.attachments || []);
+      setPendingDescriptionAttachments([]);
       setReplyToCommentId(null);
       setEditCommentId(null);
       setIsDescriptionEditing(false);
@@ -186,6 +225,18 @@ import RichTextEditor from './RichTextEditor';
       }
     }
   }, [task]);
+
+  // Update baseMax on resize so image fits the viewport nicely
+  useEffect(() => {
+    const update = () => {
+      const w = Math.max(600, window.innerWidth * 0.7);
+      const h = Math.max(400, window.innerHeight * 0.7);
+      setBaseMax({ w, h });
+    };
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
 
 
   // Handle escape key to close
@@ -389,12 +440,7 @@ import RichTextEditor from './RichTextEditor';
             </span>
           </div>
           <div className="flex items-center gap-1">
-            <button className="flex items-center justify-center p-1.5 rounded hover:bg-[#EBECF0] transition-colors">
-              <span className="material-symbols-outlined" style={{ fontSize: '18px', color: '#42526E' }}>share</span>
-            </button>
-            <button className="flex items-center justify-center p-1.5 rounded hover:bg-[#EBECF0] transition-colors">
-              <span className="material-symbols-outlined" style={{ fontSize: '18px', color: '#42526E' }}>more_horiz</span>
-            </button>
+            {/* share and more icons removed per UX request */}
             <button className="flex items-center justify-center p-1.5 rounded hover:bg-[#EBECF0] transition-colors" onClick={onClose} title="Close">
               <span className="material-symbols-outlined" style={{ fontSize: '18px', color: '#42526E' }}>close</span>
             </button>
@@ -499,7 +545,11 @@ import RichTextEditor from './RichTextEditor';
                   <div className="flex gap-2">
                     <button
                       onClick={() => {
-                        setLocalTask(prev => ({ ...prev, description: tempDescription }));
+                        const combinedAttachments = [...attachments, ...pendingDescriptionAttachments];
+                        setLocalTask(prev => ({ ...prev, description: tempDescription, attachments: combinedAttachments }));
+                        syncTask({ description: tempDescription, attachments: combinedAttachments });
+                        setAttachments(combinedAttachments);
+                        setPendingDescriptionAttachments([]);
                         setIsDescriptionEditing(false);
                       }}
                       style={{ padding: '6px 12px', backgroundColor: '#4C2B74', color: '#fff', border: 'none', borderRadius: '3px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
@@ -550,17 +600,60 @@ import RichTextEditor from './RichTextEditor';
                     key={file.id}
                     className="flex items-center gap-3 group cursor-pointer hover:bg-[#F4F5F7] transition-colors"
                     style={{ padding: '10px 14px', border: '1px solid #DFE1E6', borderRadius: '6px' }}
+                    onClick={() => {
+                      if (file.type === 'image' && file.previewUrl) {
+                        setPreviewAttachment(file);
+                      }
+                    }}
                   >
-                    <div className="flex items-center justify-center shrink-0" style={{ width: '40px', height: '40px', backgroundColor: file.bg, borderRadius: '6px' }}>
-                      <span className="material-symbols-outlined" style={{ fontSize: '22px', color: file.color }}>{file.icon}</span>
-                    </div>
+                    {file.type === 'image' && file.previewUrl ? (
+                      <img
+                        src={file.previewUrl}
+                        alt={file.name}
+                        style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '6px', border: '1px solid #DFE1E6' }}
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center shrink-0" style={{ width: '40px', height: '40px', backgroundColor: file.bg, borderRadius: '6px' }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '22px', color: file.color }}>{file.icon}</span>
+                      </div>
+                    )}
                     <div className="flex flex-col flex-1 overflow-hidden">
                       <span className="truncate" style={{ fontSize: '13px', fontWeight: 600, color: '#172B4D' }}>{file.name}</span>
                       <span style={{ fontSize: '11px', color: '#6B778C' }}>{file.size} • {file.date}</span>
                     </div>
-                    <span className="material-symbols-outlined opacity-0 group-hover:opacity-100 transition-opacity" style={{ fontSize: '18px', color: '#42526E' }}>download</span>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); triggerReplace(file.id); }}
+                        title="Replace"
+                        style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#6B778C', padding: 6, borderRadius: 6 }}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: 18 }}>edit</span>
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); deleteAttachment(file.id); }}
+                        title="Delete"
+                        style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#DE350B', padding: 6, borderRadius: 6 }}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <span className="material-symbols-outlined">delete</span>
+                      </button>
+                      {file.previewUrl ? (
+                        <button
+                          onClick={(e) => downloadAttachment(file, e)}
+                          title="Download"
+                          style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#42526E', padding: 6, borderRadius: 6 }}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: 18 }}>download</span>
+                        </button>
+                      ) : (
+                        <span className="material-symbols-outlined opacity-0 group-hover:opacity-100 transition-opacity" style={{ fontSize: '18px', color: '#42526E' }}>download</span>
+                      )}
+                    </div>
                   </div>
                 ))}
+                <input type="file" ref={replaceInputRef} onChange={handleReplaceFile} style={{ display: 'none' }} />
               </div>
               {isUploadAreaOpen && (
                 <div
@@ -570,7 +663,7 @@ import RichTextEditor from './RichTextEditor';
                 >
                   <div
                     className="flex items-center justify-center"
-                    style={{ width: '56px', height: '56px', borderRadius: '16px', backgroundColor: '#F4F5F7' }}
+                    style={{ width: '56px', height: '56px', borderRadius: '16px', backgroundColor: '#F4F7FA' }}
                   >
                     <span className="material-symbols-outlined" style={{ fontSize: '32px', color: '#4C2B74' }}>cloud_upload</span>
                   </div>
@@ -581,6 +674,83 @@ import RichTextEditor from './RichTextEditor';
                 </div>
               )}
             </div>
+
+            {previewAttachment && (
+              <div
+                className="fixed inset-0 z-[11000] flex items-center justify-center bg-black/70"
+                onClick={() => {
+                  setPreviewAttachment(null);
+                  setPreviewZoom(1);
+                }}
+              >
+                <div
+                  className="bg-white rounded-2xl p-2"
+                  style={{ position: 'relative', width: '75vw', height: '80vh', padding: 12, overflow: 'hidden' }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div style={{ position: 'absolute', top: 16, right: 16, display: 'flex', gap: '8px', zIndex: 20 }}>
+                    <button
+                      onClick={() => setPreviewZoom(prev => Math.max(0.5, prev - 0.25))}
+                      style={{ border: '1px solid #DFE1E6', background: '#fff', borderRadius: '6px', width: '34px', height: '34px', fontSize: '18px', color: '#4C2B74', cursor: 'pointer' }}
+                      title="Zoom out"
+                    >
+                      −
+                    </button>
+                    <button
+                      onClick={() => setPreviewZoom(prev => Math.min(2, prev + 0.25))}
+                      style={{ border: '1px solid #DFE1E6', background: '#fff', borderRadius: '6px', width: '34px', height: '34px', fontSize: '18px', color: '#4C2B74', cursor: 'pointer' }}
+                      title="Zoom in"
+                    >
+                      +
+                    </button>
+                    <button
+                      onClick={() => {
+                        setPreviewAttachment(null);
+                        setPreviewZoom(1);
+                      }}
+                      style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#4C2B74', fontSize: '24px', lineHeight: '1' }}
+                      title="Close"
+                    >
+                      ×
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between mb-3" style={{ gap: '12px', minWidth: '300px' }}>
+                    <div>
+                      <div style={{ fontSize: '14px', fontWeight: 700, color: '#172B4D' }}>{previewAttachment.name}</div>
+                      <div style={{ fontSize: '12px', color: '#6B778C' }}>{previewAttachment.size}</div>
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'center', overflow: 'auto', height: 'calc(80vh - 80px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ display: 'inline-block' }}>
+                      <img
+                        ref={previewImgRef}
+                        src={previewAttachment.previewUrl}
+                        alt={previewAttachment.name}
+                        onLoad={(e) => {
+                          const iw = e.target.naturalWidth || e.target.width;
+                          const ih = e.target.naturalHeight || e.target.height;
+                          setNaturalSize({ w: iw, h: ih });
+                          // compute fit scale to baseMax
+                          const fitScale = Math.min(1, baseMax.w / iw, baseMax.h / ih);
+                          const bw = Math.round(iw * fitScale);
+                          setBaseWidth(bw);
+                          // reset zoom to 1 when loading new image
+                          setPreviewZoom(1);
+                        }}
+                        style={{
+                          width: baseWidth ? `${Math.max(40, Math.min(baseWidth * previewZoom, baseMax.w * 4))}px` : 'auto',
+                          height: 'auto',
+                          maxWidth: 'none',
+                          maxHeight: 'none',
+                          borderRadius: '6px',
+                          display: 'block'
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
 
             {/* ── Activity Tabs ── */}

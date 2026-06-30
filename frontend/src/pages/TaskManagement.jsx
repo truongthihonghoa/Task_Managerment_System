@@ -63,6 +63,16 @@ export default function TaskManagement() {
     }
   }, [tasks, setTasksForModal]);
  
+  // Keep selected task detail in sync with the latest task state
+  useEffect(() => {
+    if (selectedTaskDetail) {
+      const current = tasks.find(t => t.id === selectedTaskDetail.id);
+      if (current && current !== selectedTaskDetail) {
+        setSelectedTaskDetail(current);
+      }
+    }
+  }, [tasks, selectedTaskDetail]);
+ 
   const toggleAll = () => {
     if (selectedTasks.length === tasks.length) {
       setSelectedTasks([]);
