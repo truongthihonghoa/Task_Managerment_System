@@ -31,12 +31,27 @@ const ConfirmationModal = ({ isOpen, title, message, onConfirm, onCancel }) => {
       {/* Hộp thoại */}
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm relative z-10 animate-in fade-in zoom-in duration-200">
         <div className="p-6">
-          <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center mb-4">
-            <i className="material-symbols-outlined text-red-600">warning</i>
+          <div className="flex items-start gap-4">
+            {/* Icon */}
+            <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
+              <span className="material-symbols-outlined text-orange-600 text-xl">
+                warning
+              </span>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1">
+              <h3 className="text-lg font-bold text-gray-900">
+                {title}
+              </h3>
+
+              <p className="mt-1 text-sm text-gray-600 leading-relaxed">
+                {message}
+              </p>
+            </div>
           </div>
-          <h3 className="text-lg font-bold text-gray-900 mb-2">{title}</h3>
-          <p className="text-sm text-gray-600 leading-relaxed mb-6">{message}</p>
-          <div className="flex gap-3">
+
+          <div className="flex gap-3 mt-6">
             <button onClick={onCancel} className="flex-1 px-4 py-2 text-sm font-semibold text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">Cancel</button>
             <button onClick={onConfirm} className="flex-1 px-4 py-2 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors">Confirm</button>
           </div>

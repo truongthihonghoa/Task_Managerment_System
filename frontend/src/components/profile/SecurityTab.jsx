@@ -23,19 +23,23 @@ export default function SecurityTab() {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-6">
-          <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center mb-4">
-            <span className="material-symbols-outlined text-orange-600 text-[24px]">
-              warning
-            </span>
+          <div className="flex items-start gap-4 mb-6">
+            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
+              <span className="material-symbols-outlined text-orange-600 text-[22px]">
+                warning
+              </span>
+            </div>
+
+            <div className="flex-1">
+                  <h3 className="text-lg font-bold text-gray-900">
+                    {title}
+                  </h3>
+
+                  <p className="mt-1 text-sm text-gray-600 leading-relaxed">
+                    {message}
+                  </p>
+                </div>
           </div>
-
-          <h3 className="text-lg font-bold text-gray-900 mb-2">
-            {title}
-          </h3>
-
-          <p className="text-sm text-gray-600 leading-relaxed mb-6">
-            {message}
-          </p>
 
           <div className="flex gap-3">
             <button
