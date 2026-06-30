@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect, useCallback } from 'react';
 import ReactDOM from 'react-dom';
 import '../../styles/RichTextEditor.css';
 
+
 // ─────────────────────────────────────────────
 // Data
 // ─────────────────────────────────────────────
@@ -16,11 +17,13 @@ const TEXT_COLORS = [
   { label: 'Gray',    value: '#6B778C' },
 ];
 
+
 const EMOJIS = [
   '😀','😂','😍','🤔','👍','👎','🎉','🔥',
   '✅','❌','⚠️','💡','📌','📎','🗂️','💬',
   '🛠️','🚀','📅','🔗','📝','💯','⭐','🏆',
 ];
+
 
 const MENTION_USERS = [
   { id: 1, name: 'Alex Morgan',   avatar: 'AM', color: '#4C2B74' },
@@ -30,12 +33,14 @@ const MENTION_USERS = [
   { id: 5, name: 'Michael Brown', avatar: 'MB', color: '#DE350B' },
 ];
 
+
 const HEADING_OPTIONS = [
   { label: 'Normal text', tag: 'p',  fontSize: '14px', fontWeight: '400' },
   { label: 'Heading 1',   tag: 'h1', fontSize: '22px', fontWeight: '700' },
   { label: 'Heading 2',   tag: 'h2', fontSize: '18px', fontWeight: '700' },
   { label: 'Heading 3',   tag: 'h3', fontSize: '15px', fontWeight: '700' },
 ];
+
 
 // ─────────────────────────────────────────────
 // Helpers
@@ -46,12 +51,14 @@ function saveSelection() {
   return null;
 }
 
+
 function restoreSelection(range) {
   if (!range) return;
   const sel = window.getSelection();
   sel.removeAllRanges();
   sel.addRange(range);
 }
+
 
 /**
  * Compute portal position (fixed) from a trigger element.
@@ -64,8 +71,10 @@ function getPortalPos(triggerEl, panelHeight = 200, panelWidth = 180) {
   const vw = window.innerWidth;
   const vh = window.innerHeight;
 
+
   let top  = rect.bottom + 6;
   let left = rect.left;
+
 
   // Flip above if not enough space below
   if (top + panelHeight > vh - 16) {
@@ -77,8 +86,10 @@ function getPortalPos(triggerEl, panelHeight = 200, panelWidth = 180) {
   }
   if (left < 8) left = 8;
 
+
   return { top, left };
 }
+
 
 // ─────────────────────────────────────────────
 // Portal Dropdown — renders into document.body
@@ -87,9 +98,11 @@ function PortalDropdown({ triggerRef, children, className = '', panelHeight, pan
   const [pos, setPos] = useState({ top: 0, left: 0 });
   const panelRef = useRef(null);
 
+
   useEffect(() => {
     setPos(getPortalPos(triggerRef?.current, panelHeight, panelWidth));
   }, [triggerRef, panelHeight, panelWidth]);
+
 
   // Close on outside click
   useEffect(() => {
@@ -109,6 +122,7 @@ function PortalDropdown({ triggerRef, children, className = '', panelHeight, pan
     };
   }, [triggerRef, onClose]);
 
+
   return ReactDOM.createPortal(
     <div
       ref={panelRef}
@@ -120,6 +134,7 @@ function PortalDropdown({ triggerRef, children, className = '', panelHeight, pan
     document.body
   );
 }
+
 
 // ─────────────────────────────────────────────
 // Portal Dialog (Link / Image)
@@ -135,13 +150,15 @@ function PortalDialog({ onClose, children }) {
   );
 }
 
+
 // ─────────────────────────────────────────────
 // Main Component
 // ─────────────────────────────────────────────
-export default function RichTextEditor({ value, onChange, placeholder, tasks = [] }) {
+export default function RichTextEditor({ value, onChange, placeholder, tasks = [], onUploadFile }) {
   const editorRef     = useRef(null);
   const savedRangeRef = useRef(null);
   const rootRef       = useRef(null);
+
 
   // Trigger button refs (for portal positioning)
   const headingBtnRef = useRef(null);
@@ -149,6 +166,7 @@ export default function RichTextEditor({ value, onChange, placeholder, tasks = [
   const listBtnRef    = useRef(null);
   const emojiBtnRef   = useRef(null);
   const plusBtnRef    = useRef(null);
+
 
   // Dropdown open states
   const [showHeading, setShowHeading] = useState(false);
@@ -159,6 +177,7 @@ export default function RichTextEditor({ value, onChange, placeholder, tasks = [
   const [showLink,    setShowLink]    = useState(false);
   const [showImage,   setShowImage]   = useState(false);
   const [showMention, setShowMention] = useState(false);
+
 
   // Tool state
   const [linkUrl,        setLinkUrl]        = useState('');
@@ -172,6 +191,7 @@ export default function RichTextEditor({ value, onChange, placeholder, tasks = [
   const [currentColor,   setCurrentColor]   = useState('#172B4D');
   const [activeFormats,  setActiveFormats]  = useState({ bold: false, italic: false, underline: false });
 
+
   // ── active format detection ─────────────────
   const updateActiveFormats = useCallback(() => {
     try {
@@ -183,6 +203,7 @@ export default function RichTextEditor({ value, onChange, placeholder, tasks = [
     } catch (_) {}
   }, []);
 
+
   // ── close all dropdowns ─────────────────────
   const closeAll = useCallback(() => {
     setShowHeading(false);
@@ -193,6 +214,7 @@ export default function RichTextEditor({ value, onChange, placeholder, tasks = [
     setShowMention(false);
   }, []);
 
+
   // ── exec helpers ─────────────────────────────
   const exec = useCallback((cmd, val = null) => {
     editorRef.current?.focus();
@@ -202,14 +224,17 @@ export default function RichTextEditor({ value, onChange, placeholder, tasks = [
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [updateActiveFormats]);
 
+
   const notifyChange = useCallback(() => {
     if (onChange && editorRef.current) onChange(editorRef.current.innerHTML);
   }, [onChange]);
+
 
   // ── Format actions ───────────────────────────
   const applyBold      = () => exec('bold');
   const applyItalic    = () => exec('italic');
   const applyUnderline = () => exec('underline');
+
 
   const applyColor = (color) => {
     restoreSelection(savedRangeRef.current);
@@ -218,13 +243,16 @@ export default function RichTextEditor({ value, onChange, placeholder, tasks = [
     setShowColor(false);
   };
 
+
   const applyHeading = (opt) => {
     exec('formatBlock', opt.tag);
     setShowHeading(false);
   };
 
+
   const applyBulletList   = () => { exec('insertUnorderedList'); setShowList(false); };
   const applyNumberedList = () => { exec('insertOrderedList');   setShowList(false); };
+
 
   // ── Link dialog ──────────────────────────────
   const openLinkDialog = () => {
@@ -242,10 +270,12 @@ export default function RichTextEditor({ value, onChange, placeholder, tasks = [
     setShowLink(true);
   };
 
+
   const insertLink = () => {
     if (!linkUrl && !linkSelected) return;
     restoreSelection(savedRangeRef.current);
     editorRef.current?.focus();
+
 
     let html;
     if (linkSelected) {
@@ -263,10 +293,12 @@ export default function RichTextEditor({ value, onChange, placeholder, tasks = [
       html = `<a href="${linkUrl}" target="_blank" rel="noopener noreferrer" class="rte-link">${display}</a>&nbsp;`;
     }
 
+
     try { document.execCommand('insertHTML', false, html); } catch (_) {}
     notifyChange();
     setShowLink(false);
   };
+
 
   // Select task from popup — insert immediately
   const handleSelectTaskLink = (task) => {
@@ -284,6 +316,7 @@ export default function RichTextEditor({ value, onChange, placeholder, tasks = [
     setShowLink(false);
   };
 
+
   // ── Image dialog ─────────────────────────────
   const openImageDialog = () => {
     savedRangeRef.current = saveSelection();
@@ -292,6 +325,7 @@ export default function RichTextEditor({ value, onChange, placeholder, tasks = [
     closeAll();
     setShowImage(true);
   };
+
 
   const insertImage = (customUrl = null, customAlt = null) => {
     const finalUrl = customUrl || imageUrl;
@@ -305,6 +339,7 @@ export default function RichTextEditor({ value, onChange, placeholder, tasks = [
     setShowImage(false);
   };
 
+
   // ── Emoji ─────────────────────────────────────
   const insertEmoji = (emoji) => {
     editorRef.current?.focus();
@@ -312,6 +347,7 @@ export default function RichTextEditor({ value, onChange, placeholder, tasks = [
     notifyChange();
     setShowEmoji(false);
   };
+
 
   // ── @Mention ──────────────────────────────────
   const insertMention = (user) => {
@@ -323,6 +359,7 @@ export default function RichTextEditor({ value, onChange, placeholder, tasks = [
     setShowMention(false);
   };
 
+
   // ── Plus / Insert actions ─────────────────────
   const insertCodeBlock = () => {
     editorRef.current?.focus();
@@ -331,6 +368,7 @@ export default function RichTextEditor({ value, onChange, placeholder, tasks = [
     notifyChange();
     setShowPlus(false);
   };
+
 
   const insertTable = () => {
     editorRef.current?.focus();
@@ -347,6 +385,7 @@ export default function RichTextEditor({ value, onChange, placeholder, tasks = [
     setShowPlus(false);
   };
 
+
   const insertPanel = (type) => {
     const icons = { info: 'ℹ️', success: '✅', warning: '⚠️', error: '❌' };
     editorRef.current?.focus();
@@ -356,12 +395,14 @@ export default function RichTextEditor({ value, onChange, placeholder, tasks = [
     setShowPlus(false);
   };
 
+
   const insertQuote = () => {
     editorRef.current?.focus();
     try { document.execCommand('formatBlock', false, 'blockquote'); } catch (_) {}
     notifyChange();
     setShowPlus(false);
   };
+
 
   // ── @ keyup handler ───────────────────────────
   const handleKeyUp = (e) => {
@@ -383,6 +424,7 @@ export default function RichTextEditor({ value, onChange, placeholder, tasks = [
     notifyChange();
   };
 
+
   // ── Init with value ───────────────────────────
   useEffect(() => {
     if (editorRef.current && value !== undefined && editorRef.current.innerHTML !== value) {
@@ -391,9 +433,11 @@ export default function RichTextEditor({ value, onChange, placeholder, tasks = [
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+
   const filteredMentions = MENTION_USERS.filter(u =>
     u.name.toLowerCase().includes(mentionQuery.toLowerCase())
   );
+
 
   // ── Toggle helpers ────────────────────────────
   const toggleHeading = () => {
@@ -419,6 +463,7 @@ export default function RichTextEditor({ value, onChange, placeholder, tasks = [
     setShowHeading(false); setShowColor(false); setShowList(false); setShowEmoji(false);
   };
 
+
   // ── Mention from toolbar button ───────────────
   const triggerMentionFromToolbar = () => {
     editorRef.current?.focus();
@@ -429,11 +474,14 @@ export default function RichTextEditor({ value, onChange, placeholder, tasks = [
     setShowMention(true);
   };
 
+
   return (
     <div ref={rootRef} className="rte-root description-container-fixed">
 
+
       {/* ══════════════ TOOLBAR ══════════════ */}
       <div className="description-toolbar-advanced rte-toolbar">
+
 
         {/* Tt – Heading */}
         <button
@@ -448,7 +496,9 @@ export default function RichTextEditor({ value, onChange, placeholder, tasks = [
           </svg>
         </button>
 
+
         <div className="toolbar-divider" />
+
 
         {/* B / I / U */}
         <button
@@ -459,6 +509,7 @@ export default function RichTextEditor({ value, onChange, placeholder, tasks = [
           <strong style={{ fontSize: 14 }}>B</strong>
         </button>
 
+
         <button
           className={`toolbar-btn-advanced rte-format-btn${activeFormats.italic ? ' rte-active' : ''}`}
           title="Italic (Ctrl+I)"
@@ -466,6 +517,7 @@ export default function RichTextEditor({ value, onChange, placeholder, tasks = [
         >
           <em style={{ fontSize: 14, fontFamily: 'Georgia,serif' }}>I</em>
         </button>
+
 
         <button
           className={`toolbar-btn-advanced rte-format-btn${activeFormats.underline ? ' rte-active' : ''}`}
@@ -475,7 +527,9 @@ export default function RichTextEditor({ value, onChange, placeholder, tasks = [
           <span style={{ textDecoration: 'underline', fontSize: 14 }}>U</span>
         </button>
 
+
         <div className="toolbar-divider" />
+
 
         {/* A – Text color */}
         <button
@@ -493,7 +547,9 @@ export default function RichTextEditor({ value, onChange, placeholder, tasks = [
           </svg>
         </button>
 
+
         <div className="toolbar-divider" />
+
 
         {/* List */}
         <button
@@ -510,7 +566,9 @@ export default function RichTextEditor({ value, onChange, placeholder, tasks = [
           </svg>
         </button>
 
+
         <div className="toolbar-divider" />
+
 
         {/* Link */}
         <button className="toolbar-btn-advanced" title="Insert link" onClick={openLinkDialog}>
@@ -520,6 +578,7 @@ export default function RichTextEditor({ value, onChange, placeholder, tasks = [
           </svg>
         </button>
 
+
         {/* Image */}
         <button className="toolbar-btn-advanced" title="Insert image" onClick={openImageDialog}>
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -528,6 +587,7 @@ export default function RichTextEditor({ value, onChange, placeholder, tasks = [
             <path d="M1.5 11.5l3.5-3.5 2.5 2.5 2-2 4 4" stroke="#42526E" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </button>
+
 
         {/* Emoji */}
         <button
@@ -544,6 +604,7 @@ export default function RichTextEditor({ value, onChange, placeholder, tasks = [
           </svg>
         </button>
 
+
         {/* @ Mention */}
         <button
           className="toolbar-btn-advanced rte-mention-trigger"
@@ -552,6 +613,7 @@ export default function RichTextEditor({ value, onChange, placeholder, tasks = [
         >
           <span style={{ fontSize: 13, fontWeight: 600, color: '#42526E' }}>@</span>
         </button>
+
 
         {/* + Insert menu */}
         <button
@@ -569,6 +631,7 @@ export default function RichTextEditor({ value, onChange, placeholder, tasks = [
         </button>
       </div>
 
+
       {/* ══════════════ EDITOR AREA ══════════════ */}
       <div className="rte-editor-wrap">
         <div
@@ -584,7 +647,9 @@ export default function RichTextEditor({ value, onChange, placeholder, tasks = [
         />
       </div>
 
+
       {/* ══════════════ PORTAL DROPDOWNS ══════════════ */}
+
 
       {/* Heading dropdown */}
       {showHeading && (
@@ -606,6 +671,7 @@ export default function RichTextEditor({ value, onChange, placeholder, tasks = [
           ))}
         </PortalDropdown>
       )}
+
 
       {/* Color dropdown */}
       {showColor && (
@@ -631,6 +697,7 @@ export default function RichTextEditor({ value, onChange, placeholder, tasks = [
         </PortalDropdown>
       )}
 
+
       {/* List dropdown */}
       {showList && (
         <PortalDropdown
@@ -647,6 +714,7 @@ export default function RichTextEditor({ value, onChange, placeholder, tasks = [
           </div>
         </PortalDropdown>
       )}
+
 
       {/* Emoji picker */}
       {showEmoji && (
@@ -668,6 +736,7 @@ export default function RichTextEditor({ value, onChange, placeholder, tasks = [
           </div>
         </PortalDropdown>
       )}
+
 
       {/* Plus / insert menu */}
       {showPlus && (
@@ -704,6 +773,7 @@ export default function RichTextEditor({ value, onChange, placeholder, tasks = [
         </PortalDropdown>
       )}
 
+
       {/* @Mention suggestion — anchored at editor top-left via portal */}
       {showMention && (
         <MentionPortal
@@ -713,6 +783,7 @@ export default function RichTextEditor({ value, onChange, placeholder, tasks = [
           onClose={() => setShowMention(false)}
         />
       )}
+
 
       {/* Link dialog nâng cấp */}
       {showLink && (
@@ -733,6 +804,7 @@ export default function RichTextEditor({ value, onChange, placeholder, tasks = [
         />
       )}
 
+
       {/* Image dialog nâng cấp */}
       {showImage && (
         <ImageDialog
@@ -742,11 +814,13 @@ export default function RichTextEditor({ value, onChange, placeholder, tasks = [
           setImageAlt={setImageAlt}
           onInsert={insertImage}
           onClose={() => setShowImage(false)}
+          onUploadFile={onUploadFile}
         />
       )}
     </div>
   );
 }
+
 
 // ─────────────────────────────────────────────
 // Mention Portal — appears above/near the cursor
@@ -754,6 +828,7 @@ export default function RichTextEditor({ value, onChange, placeholder, tasks = [
 function MentionPortal({ editorRef, filteredMentions, onSelect, onClose }) {
   const [pos, setPos] = useState({ top: 0, left: 0 });
   const panelRef = useRef(null);
+
 
   useEffect(() => {
     // Position near caret using Selection API
@@ -774,6 +849,7 @@ function MentionPortal({ editorRef, filteredMentions, onSelect, onClose }) {
     }
   }, [editorRef]);
 
+
   useEffect(() => {
     const handler = (e) => {
       if (panelRef.current && !panelRef.current.contains(e.target)) onClose();
@@ -781,6 +857,7 @@ function MentionPortal({ editorRef, filteredMentions, onSelect, onClose }) {
     const id = setTimeout(() => document.addEventListener('mousedown', handler), 0);
     return () => { clearTimeout(id); document.removeEventListener('mousedown', handler); };
   }, [onClose]);
+
 
   return ReactDOM.createPortal(
     <div
@@ -807,6 +884,7 @@ function MentionPortal({ editorRef, filteredMentions, onSelect, onClose }) {
   );
 }
 
+
 // ─────────────────────────────────────────────
 // LinkDialog — popup chèn link nâng cấp
 // ─────────────────────────────────────────────
@@ -820,6 +898,7 @@ function LinkDialog({
 }) {
   const searchLower = linkSearch.toLowerCase();
 
+
   // Lọc task theo từ khóa (ID, title, status)
   const filteredTasks = tasks.filter(t =>
     !linkSearch ||
@@ -828,8 +907,10 @@ function LinkDialog({
     (t.status && t.status.toLowerCase().includes(searchLower))
   );
 
+
   // Xác định đây là URL ngoài hay task
   const isExternalUrl = linkUrl && !linkUrl.startsWith('#task-');
+
 
   const handleUrlChange = (e) => {
     const val = e.target.value;
@@ -838,6 +919,7 @@ function LinkDialog({
     // Dùng URL input như search luôn
     setLinkSearch(val);
   };
+
 
   const statusColor = (status) => {
     if (!status) return { bg: '#F4F5F7', text: '#42526E' };
@@ -848,12 +930,14 @@ function LinkDialog({
     return { bg: '#DEEBFF', text: '#0052CC' };
   };
 
+
   return ReactDOM.createPortal(
     <div
       className="rte-dialog-overlay"
       onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div className="rte-link-dialog" onMouseDown={(e) => e.stopPropagation()}>
+
 
         {/* Tiêu đề */}
         <div className="rte-link-dialog-header">
@@ -868,6 +952,7 @@ function LinkDialog({
             </svg>
           </button>
         </div>
+
 
         {/* Ô nhập URL / tìm kiếm */}
         <div className="rte-link-url-section">
@@ -901,6 +986,7 @@ function LinkDialog({
           </div>
         </div>
 
+
         {/* Ô hiển thị text */}
         <div className="rte-link-url-section" style={{ marginTop: 10 }}>
           <label className="rte-link-label">Display text (optional)</label>
@@ -912,9 +998,11 @@ function LinkDialog({
           />
         </div>
 
+
         {/* Danh sách task - chỉ hiển thị khi chưa chọn và chưa nhập URL ngoài */}
         {!linkSelected && !isExternalUrl && (
           <div className="rte-link-task-body">
+
 
             {/* Task List & Board */}
             {filteredTasks.length > 0 && (
@@ -945,9 +1033,11 @@ function LinkDialog({
               </>
             )}
 
+
             {linkSearch && filteredTasks.length === 0 && (
               <div className="rte-link-empty">No tasks found for "{linkSearch}"</div>
             )}
+
 
             {/* Task gần đây */}
             {!linkSearch && recentTasks.length > 0 && (
@@ -981,11 +1071,14 @@ function LinkDialog({
         )}
 
 
+
+
       </div>
     </div>,
     document.body
   );
 }
+
 
 // ─────────────────────────────────────────────
 // ImageDialog — popup chèn ảnh / tải lên
@@ -993,10 +1086,12 @@ function LinkDialog({
 function ImageDialog({
   imageUrl, setImageUrl,
   imageAlt, setImageAlt,
-  onInsert, onClose
+  onInsert, onClose,
+  onUploadFile
 }) {
   const [activeTab, setActiveTab] = useState('file'); // 'file' or 'link'
   const fileInputRef = useRef(null);
+
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -1004,30 +1099,34 @@ function ImageDialog({
       const reader = new FileReader();
       reader.onload = (ev) => {
         const base64 = ev.target.result;
-        // Tự động chèn luôn khi tải lên thành công (hoặc chuyển tab tùy ý)
+        if (onUploadFile) {
+          onUploadFile(file);
+        }
         onInsert(base64, file.name);
       };
       reader.readAsDataURL(file);
     }
   };
 
+
   const triggerUpload = () => {
     fileInputRef.current?.click();
   };
 
+
   return ReactDOM.createPortal(
     <div className="rte-dialog-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="rte-image-dialog" onMouseDown={(e) => e.stopPropagation()}>
-        
+       
         {/* Tabs */}
         <div className="rte-image-dialog-tabs">
-          <div 
+          <div
             className={`rte-image-tab ${activeTab === 'file' ? 'active' : ''}`}
             onClick={() => setActiveTab('file')}
           >
             File
           </div>
-          <div 
+          <div
             className={`rte-image-tab ${activeTab === 'link' ? 'active' : ''}`}
             onClick={() => setActiveTab('link')}
           >
@@ -1035,16 +1134,17 @@ function ImageDialog({
           </div>
         </div>
 
+
         {/* Content */}
         <div className="rte-image-content">
           {activeTab === 'file' ? (
             <div className="rte-file-section">
               <div className="rte-upload-zone">
-                <input 
-                  type="file" 
-                  ref={fileInputRef} 
-                  style={{ display: 'none' }} 
-                  accept="image/*"
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  style={{ display: 'none' }}
+                  accept="*/*"
                   onChange={handleFileChange}
                 />
                 <button className="rte-upload-btn" onClick={triggerUpload}>
@@ -1055,7 +1155,7 @@ function ImageDialog({
                       <line x1="12" y1="3" x2="12" y2="15" />
                     </svg>
                   </span>
-                  Upload
+                  Upload file
                 </button>
               </div>
               <div className="rte-dialog-actions" style={{ marginTop: 16 }}>
@@ -1088,8 +1188,10 @@ function ImageDialog({
           )}
         </div>
 
+
       </div>
     </div>,
     document.body
   );
 }
+
