@@ -3,36 +3,36 @@ import { useNavigate } from 'react-router-dom';
 
 export default function SecurityTab() {
   const navigate = useNavigate();
-  const [passwordData, setPasswordData] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
-  });
-  const [showPasswords, setShowPasswords] = useState({
-    current: false,
-    new: false,
-    confirm: false
-  });
+  const [modalConfig, setModalConfig] = useState({ isOpen: false, title: '', message: '', action: null });
+
+  // Component Popup
+  const ConfirmationModal = ({ isOpen, title, message, onConfirm, onCancel }) => {
+    if (!isOpen) return null;
+    return (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-[#091E42]/50 backdrop-blur-[3px] transition-all duration-300">        <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm animate-in fade-in zoom-in duration-200">
+          <div className="p-6">
+            <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center mb-4">
+              <i className="w-6 h-6 text-orange-600" data-lucide="alert-triangle"></i>
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">{title}</h3>
+            <p className="text-sm text-gray-600 leading-relaxed mb-6">{message}</p>
+            <div className="flex gap-3">
+              <button onClick={onCancel} className="flex-1 px-4 py-2 text-sm font-semibold text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">Cancel</button>
+              <button onClick={onConfirm} className="flex-1 px-4 py-2 text-sm font-semibold text-white bg-[#2D1B4E] rounded-lg hover:bg-opacity-90 transition-colors">Confirm</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const [passwordData, setPasswordData] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [showPasswords, setShowPasswords] = useState({ current: false, new: false, confirm: false });
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [updateSuccess, setUpdateSuccess] = useState(false);
-
   const [sessions, setSessions] = useState([
-    {
-      id: 1,
-      device: 'Chrome - Windows',
-      location: 'Ho Chi Minh City, Vietnam',
-      status: 'Active Now',
-      ip: '192.168.1.1',
-      isCurrent: true
-    },
-    {
-      id: 2,
-      device: 'iPhone 14 Pro - Safari',
-      location: 'Hanoi, Vietnam',
-      status: '2 hours ago',
-      ip: '192.168.1.2',
-      isCurrent: false
-    }
+    { id: 1, device: 'Chrome - Windows', location: 'Ho Chi Minh City, Vietnam', status: 'Active Now', ip: '192.168.1.1', isCurrent: true },
+    { id: 2, device: 'iPhone 14 Pro - Safari', location: 'Hanoi, Vietnam', status: '2 hours ago', ip: '192.168.1.2', isCurrent: false }
   ]);
 
   const isMinLength = passwordData.newPassword.length >= 8;
@@ -41,16 +41,11 @@ export default function SecurityTab() {
   const hasNumber = /[0-9]/.test(passwordData.newPassword);
   const hasSpecialChar = /[^A-Za-z0-9]/.test(passwordData.newPassword);
 
-  useEffect(() => {
-    if (window.lucide) {
-      window.lucide.createIcons();
-    }
-  }, [showPasswords, passwordStrength, sessions, isMinLength, hasUppercase, hasLowercase, hasNumber, hasSpecialChar]);
+  useEffect(() => { if (window.lucide) window.lucide.createIcons(); }, [showPasswords, passwordStrength, sessions, isMinLength, hasUppercase, hasLowercase, hasNumber, hasSpecialChar]);
 
   const handlePasswordChange = (e) => {
     const { name, value } = e.target;
     setPasswordData(prev => ({ ...prev, [name]: value }));
-
     if (name === 'newPassword') {
       let strength = 0;
       if (value.length >= 8) strength += 20;
@@ -62,44 +57,16 @@ export default function SecurityTab() {
     }
   };
 
-  const togglePasswordVisibility = (field) => {
-    setShowPasswords(prev => ({ ...prev, [field]: !prev[field] }));
-  };
+  const togglePasswordVisibility = (field) => setShowPasswords(prev => ({ ...prev, [field]: !prev[field] }));
 
   const handleUpdatePassword = (e) => {
     e.preventDefault();
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
-      alert('New password and confirm password do not match!');
-      return;
-    }
-    if (passwordStrength < 100) {
-      alert('Password does not meet all requirements!');
-      return;
-    }
-    if (passwordData.currentPassword === passwordData.newPassword) {
-      alert('New password must be different from current password!');
-      return;
-    }
-
+    if (passwordData.newPassword !== passwordData.confirmPassword) { alert('New password and confirm password do not match!'); return; }
+    if (passwordStrength < 100) { alert('Password does not meet all requirements!'); return; }
     setUpdateSuccess(true);
     setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
     setPasswordStrength(0);
     setTimeout(() => setUpdateSuccess(false), 3000);
-  };
-
-  const handleLogoutSession = (sessionId) => {
-    setSessions(sessions.filter(session => session.id !== sessionId));
-  };
-
-  const handleLogoutCurrent = () => {
-    localStorage.clear();
-    sessionStorage.clear();
-    navigate('/');
-  };
-
-  const handleLogoutAll = () => {
-    setSessions(sessions.filter(session => session.isCurrent));
-    alert('All other sessions have been logged out');
   };
 
   const getStrengthColor = () => {
@@ -117,149 +84,52 @@ export default function SecurityTab() {
     if (passwordStrength <= 80) return 'Strong';
     return 'Very Strong';
   };
-    const renderStatusIcon = (isValid) => {
-    if (isValid) {
-      return (
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-green-600 flex-shrink-0">
-          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-          <polyline points="22 4 12 14.01 9 11.01"></polyline>
-        </svg>
-      );
-    }
-    return (
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400 flex-shrink-0">
-        <circle cx="12" cy="12" r="10"></circle>
-      </svg>
-    );
-  };
+
+  const renderStatusIcon = (isValid) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={isValid ? "text-green-600 flex-shrink-0" : "text-gray-400 flex-shrink-0"}>
+      {isValid ? <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14M22 4l-12 10.01-3-3" /> : <circle cx="12" cy="12" r="10" />}
+    </svg>
+  );
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-      {/* Left Column - Change Password Section (Kích thước vừa vặn cân bằng) */}
+      {/* LEFT COLUMN - CHANGE PASSWORD */}
       <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 space-y-4">
         <h2 className="text-[#5e4db2] font-semibold text-gray-900 text-base tracking-tight">Change Password</h2>
-
-        {updateSuccess && (
-          <div className="p-3 text-sm bg-green-100 text-green-700 rounded-lg font-medium">
-            Password updated successfully!
-          </div>
-        )}
+        {updateSuccess && <div className="p-3 text-sm bg-green-100 text-green-700 rounded-lg font-medium">Password updated successfully!</div>}
 
         <form onSubmit={handleUpdatePassword} className="space-y-4">
-          {/* Current Password */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">Current Password</label>
-            <div className="relative">
-              <input
-                type={showPasswords.current ? 'text' : 'password'}
-                name="currentPassword"
-                value={passwordData.currentPassword}
-                onChange={handlePasswordChange}
-                className="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#2D1B4E] pr-12"
-                required
-              />
-              <button
-                type="button"
-                onClick={() => togglePasswordVisibility('current')}
-                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <i className="w-4 h-4" data-lucide={showPasswords.current ? 'eye-off' : 'eye'}></i>
-              </button>
-            </div>
-          </div>
-
-          {/* New Password */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">New Password</label>
-            <div className="relative">
-              <input
-                type={showPasswords.new ? 'text' : 'password'}
-                name="newPassword"
-                value={passwordData.newPassword}
-                onChange={handlePasswordChange}
-                className="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#2D1B4E] pr-12 transition-all"
-                required
-              />
-              <button
-                type="button"
-                onClick={() => togglePasswordVisibility('new')}
-                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <i className="w-4 h-4" data-lucide={showPasswords.new ? 'eye-off' : 'eye'}></i>
-              </button>
-            </div>
-
-            {/* Password Strength Indicator */}
-            {passwordData.newPassword && (
-              <div className="mt-2 bg-gray-50/50 p-2.5 rounded-lg border border-gray-100">
-                <div className="flex justify-between text-xs mb-1.5">
-                  <span className="text-gray-500 font-medium">Password Strength</span>
-                  <span className={`font-bold ${passwordStrength === 100 ? 'text-green-600' : 'text-gray-600'}`}>
-                    {getStrengthText()}
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div className={`h-2 rounded-full transition-all ${getStrengthColor()}`} style={{ width: `${passwordStrength}%` }}></div>
-                </div>
+          {/* Fields giữ nguyên như cũ */}
+          {['current', 'new', 'confirm'].map((field) => (
+            <div key={field}>
+              <label className="block text-sm font-semibold text-gray-700 mb-1 capitalize">{field} Password</label>
+              <div className="relative">
+                <input type={showPasswords[field] ? 'text' : 'password'} name={`${field}Password`} value={passwordData[`${field}Password`]} onChange={handlePasswordChange} className="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#2D1B4E] pr-12" required />
+                <button type="button" onClick={() => togglePasswordVisibility(field)} className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"><i className="w-4 h-4" data-lucide={showPasswords[field] ? 'eye-off' : 'eye'}></i></button>
               </div>
-            )}
-          </div>
-
-          {/* Confirm Password */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">Confirm Password</label>
-            <div className="relative">
-              <input
-                type={showPasswords.confirm ? 'text' : 'password'}
-                name="confirmPassword"
-                value={passwordData.confirmPassword}
-                onChange={handlePasswordChange}
-                className="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#2D1B4E] pr-12"
-                required
-              />
-              <button
-                type="button"
-                onClick={() => togglePasswordVisibility('confirm')}
-                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <i className="w-4 h-4" data-lucide={showPasswords.confirm ? 'eye-off' : 'eye'}></i>
-              </button>
             </div>
-          </div>
+          ))}
 
-          {/* Password Requirements List */}
-            <div className="pt-1">
-              <p className="text-xs font-bold text-gray-800 mb-1">Password Requirements:</p>
-              <ul className="space-y-0.5 text-xs">
-                <li className={`flex items-center gap-2 px-2 py-0.5 transition-all ${isMinLength ? 'text-green-700 font-bold' : 'text-gray-500'}`}>
-                  {renderStatusIcon(isMinLength)}
-                  <span>Minimum 8 characters</span>
-                </li>
-                <li className={`flex items-center gap-2 px-2 py-0.5 transition-all ${hasUppercase ? 'text-green-700 font-bold' : 'text-gray-500'}`}>
-                  {renderStatusIcon(hasUppercase)}
-                  <span>One uppercase letter</span>
-                </li>
-                <li className={`flex items-center gap-2 px-2 py-0.5 transition-all ${hasLowercase ? 'text-green-700 font-bold' : 'text-gray-500'}`}>
-                  {renderStatusIcon(hasLowercase)}
-                  <span>One lowercase letter</span>
-                </li>
-                <li className={`flex items-center gap-2 px-2 py-0.5 transition-all ${hasNumber ? 'text-green-700 font-bold' : 'text-gray-500'}`}>
-                  {renderStatusIcon(hasNumber)}
-                  <span>One number</span>
-                </li>
-                <li className={`flex items-center gap-2 px-2 py-0.5 transition-all ${hasSpecialChar ? 'text-green-700 font-bold' : 'text-gray-500'}`}>
-                  {renderStatusIcon(hasSpecialChar)}
-                  <span>One special character</span>
-                </li>
-              </ul>
+          {/* Password Strength Indicator */}
+          {passwordData.newPassword && (
+            <div className="mt-2 bg-gray-50/50 p-2.5 rounded-lg border border-gray-100">
+              <div className="flex justify-between text-xs mb-1.5"><span className="text-gray-500 font-medium">Password Strength</span><span className="font-bold">{getStrengthText()}</span></div>
+              <div className="w-full bg-gray-200 rounded-full h-2"><div className={`h-2 rounded-full transition-all ${getStrengthColor()}`} style={{ width: `${passwordStrength}%` }}></div></div>
             </div>
+          )}
 
-          <button
-            type="submit"
-            className="w-full mt-2 px-4 py-2.5 bg-[#2D1B4E] text-white text-[15px] font-semibold rounded-lg hover:bg-opacity-95 shadow-sm active:scale-[0.99] transition-all"
-          >
-            Update Password
-          </button>
+          {/* Password Requirements */}
+          <div className="pt-1">
+            <p className="text-xs font-bold text-gray-800 mb-1">Password Requirements:</p>
+            <ul className="space-y-0.5 text-xs">
+              <li className={`flex items-center gap-2 px-2 py-0.5 ${isMinLength ? 'text-green-700 font-bold' : 'text-gray-500'}`}>{renderStatusIcon(isMinLength)} <span>Minimum 8 characters</span></li>
+              <li className={`flex items-center gap-2 px-2 py-0.5 ${hasUppercase ? 'text-green-700 font-bold' : 'text-gray-500'}`}>{renderStatusIcon(hasUppercase)} <span>One uppercase letter</span></li>
+              <li className={`flex items-center gap-2 px-2 py-0.5 ${hasLowercase ? 'text-green-700 font-bold' : 'text-gray-500'}`}>{renderStatusIcon(hasLowercase)} <span>One lowercase letter</span></li>
+              <li className={`flex items-center gap-2 px-2 py-0.5 ${hasNumber ? 'text-green-700 font-bold' : 'text-gray-500'}`}>{renderStatusIcon(hasNumber)} <span>One number</span></li>
+              <li className={`flex items-center gap-2 px-2 py-0.5 ${hasSpecialChar ? 'text-green-700 font-bold' : 'text-gray-500'}`}>{renderStatusIcon(hasSpecialChar)} <span>One special character</span></li>
+            </ul>
+          </div>
+          <button type="submit" className="w-full mt-2 px-4 py-2.5 bg-[#2D1B4E] text-white text-[15px] font-semibold rounded-lg hover:bg-opacity-95 shadow-sm active:scale-[0.99] transition-all">Update Password</button>
         </form>
       </div>
 
@@ -287,7 +157,12 @@ export default function SecurityTab() {
                 <span className="text-gray-500 font-medium">{session.status}</span>
                 {!session.isCurrent && (
                   <button
-                    onClick={() => handleLogoutSession(session.id)}
+                    onClick={() => setModalConfig({
+                      isOpen: true,
+                      title: "Logout Session",
+                      message: `Are you sure you want to log out from ${session.device}?`,
+                      action: () => setSessions(sessions.filter(s => s.id !== session.id))
+                    })}
                     className="px-3 py-1.5 bg-red-100 text-red-700 font-bold rounded-lg hover:bg-red-200 transition-all"
                   >
                     Logout
@@ -298,21 +173,33 @@ export default function SecurityTab() {
           ))}
         </div>
 
-        <div className="flex gap-3 pt-2 text-xs font-semibold">
+        <div className="flex gap-3 pt-2 text-xs font-semibold ">
           <button
-            onClick={handleLogoutCurrent}
+            onClick={() => setModalConfig({
+              isOpen: true,
+              title: "Logout Current Device",
+              message: "Are you sure you want to log out of this device?",
+              action: () => { localStorage.clear(); sessionStorage.clear(); navigate('/'); }
+            })}
             className="flex-1 px-4 py-2.5 bg-red-600 text-white text-[13px] rounded-lg hover:bg-red-700 transition-all shadow-sm"
           >
             Logout Current Device
           </button>
           <button
-            onClick={handleLogoutAll}
+            onClick={() => setModalConfig({
+              isOpen: true,
+              title: "Logout All Sessions",
+              message: "Are you sure you want to log out all other active sessions?",
+              action: () => setSessions(sessions.filter(session => session.isCurrent))
+            })}
             className="flex-1 px-4 py-2.5 bg-gray-200 text-gray-700 text-[13px] rounded-lg hover:bg-gray-300 transition-all"
           >
             Logout All Sessions
           </button>
         </div>
       </div>
+
+      <ConfirmationModal {...modalConfig} onCancel={() => setModalConfig({...modalConfig, isOpen: false})} onConfirm={() => { modalConfig.action(); setModalConfig({...modalConfig, isOpen: false}); }} />
     </div>
   );
 }

@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 
 export default function PreferencesTab() {
   const [preferences, setPreferences] = useState({
     language: 'en',
     timezone: 'gmt7'
   });
+  const [modalConfig, setModalConfig] = useState({ isOpen: false, title: '', message: '', action: null });
 
   // Tự động kích hoạt Lucide Icons/Material Symbols nếu cần
   useEffect(() => {
@@ -17,7 +19,44 @@ export default function PreferencesTab() {
     { value: 'en', label: 'English' },
     { value: 'vi', label: 'Tiếng Việt' }
   ];
+// Đặt đoạn này ở ngoài component chính PreferencesTab
+const ConfirmationModal = ({ isOpen, title, message, onConfirm, onCancel }) => {
+  if (!isOpen) return null;
 
+  return ReactDOM.createPortal(
+    <div className="fixed inset-0 z-[999999] flex items-center justify-center p-4">
+      {/* Lớp nền tối */}
+      <div className="absolute inset-0 bg-[#091E42]/50 backdrop-blur-[3px]" onClick={onCancel}></div>
+
+      {/* Hộp thoại */}
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm relative z-10 animate-in fade-in zoom-in duration-200">
+        <div className="p-6">
+          <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center mb-4">
+            <i className="material-symbols-outlined text-red-600">warning</i>
+          </div>
+          <h3 className="text-lg font-bold text-gray-900 mb-2">{title}</h3>
+          <p className="text-sm text-gray-600 leading-relaxed mb-6">{message}</p>
+          <div className="flex gap-3">
+            <button onClick={onCancel} className="flex-1 px-4 py-2 text-sm font-semibold text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">Cancel</button>
+            <button onClick={onConfirm} className="flex-1 px-4 py-2 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors">Confirm</button>
+          </div>
+        </div>
+      </div>
+    </div>,
+    document.body // Dòng quan trọng nhất: đẩy Modal ra body
+  );
+};
+    const handleDeleteAccount = () => {
+        setModalConfig({
+          isOpen: true,
+          title: "Delete Account",
+          message: "Are you sure you want to permanently delete your account? This action cannot be undone.",
+          action: () => {
+            // Thực hiện logic xóa tài khoản ở đây
+            console.log("Account deleted");
+          }
+        });
+      };
   const timezones = [
     { value: 'gmt7', label: 'GMT+7 (Vietnam)' },
     { value: 'utc', label: 'UTC (Universal Time)' }
@@ -39,10 +78,6 @@ export default function PreferencesTab() {
 
   const handleSavePreferences = () => {
     localStorage.setItem('userPreferences', JSON.stringify(preferences));
-  };
-
-  const handleDeleteAccount = () => {
-    alert('Account deletion request submitted. You will receive a confirmation email.');
   };
 
   return (
@@ -109,11 +144,11 @@ export default function PreferencesTab() {
               </div>
             </div>
 
-            <div className="mt-6 pt-4 border-t border-outline-variant flex justify-end">
+            <div className="border-t border-outline-variant flex justify-end">
               <button
                 id="btn-save-preferences"
                 onClick={handleSavePreferences}
-                className="bg-[#4C2B74] text-white font-semibold text-[15px] px-5 py-2 rounded-lg hover:bg-opacity-90 active:scale-[0.98] transition-all shadow-sm"
+                className="bg-[#4C2B74] mt-4 text-white font-semibold text-[15px] px-5 py-2 rounded-lg hover:bg-opacity-90 active:scale-[0.98] transition-all shadow-sm"
               >
                 Save Preferences
               </button>
@@ -167,13 +202,14 @@ export default function PreferencesTab() {
                 Please make sure you have completed any required tasks before deleting your account.
               </p>
               <div className="flex justify-end">
-                <button
-                  id="btn-delete-account"
-                  onClick={handleDeleteAccount}
-                  className="bg-error text-white font-semibold text-xs px-5 py-2 rounded-lg hover:bg-[#93000a] active:scale-[0.98] transition-colors shadow-sm"
-                >
-                  Delete Account
-                </button>
+                {/* Nút Delete Account trong phần JSX bên phải */}
+                  <button
+                    id="btn-delete-account"
+                    onClick={handleDeleteAccount}
+                    className="bg-error text-white font-semibold text-xs px-5 py-2 rounded-lg hover:bg-[#93000a] active:scale-[0.98] transition-colors shadow-sm"
+                  >
+                    Delete Account
+                  </button>
               </div>
             </div>
           </div>
@@ -181,6 +217,14 @@ export default function PreferencesTab() {
         </div>
 
       </div>
+      <ConfirmationModal
+        {...modalConfig}
+        onCancel={() => setModalConfig({ ...modalConfig, isOpen: false })}
+        onConfirm={() => {
+          modalConfig.action();
+          setModalConfig({ ...modalConfig, isOpen: false });
+        }}
+      />
     </div>
   );
 }
