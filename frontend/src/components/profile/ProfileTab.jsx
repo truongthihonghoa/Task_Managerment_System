@@ -66,31 +66,49 @@ export default function ProfileTab() {
       <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 flex items-center gap-6">
       {/* Avatar Section */}
       <div className="relative">
-        <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-indigo-100 bg-gradient-to-br from-[#2D1B4E] to-[#4A3B7A] flex items-center justify-center">
-          {(isEditing ? editData.avatar : profileData.avatar) && (isEditing ? editData.avatar : profileData.avatar) !== 'https://via.placeholder.com/150' ? (
-            <img src={isEditing ? editData.avatar : profileData.avatar} alt="Profile" className="w-full h-full object-cover" />
-          ) : (
-            <span className="text-white text-3xl font-bold">
-              {profileData.fullName 
-                ? profileData.fullName.split(' ').map(word => word.charAt(0).toUpperCase()).join('').slice(0, 2)
-                : 'U'}
-            </span>
+          <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-indigo-100 bg-gradient-to-br from-[#2D1B4E] to-[#4A3B7A] flex items-center justify-center">
+            {(isEditing ? editData.avatar : profileData.avatar) &&
+            (isEditing ? editData.avatar : profileData.avatar) !==
+              "https://via.placeholder.com/150" ? (
+              <img
+                src={isEditing ? editData.avatar : profileData.avatar}
+                alt="Profile"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <span className="text-white text-3xl font-bold">
+                {profileData.fullName
+                  ? profileData.fullName
+                      .split(" ")
+                      .map((word) => word.charAt(0).toUpperCase())
+                      .join("")
+                      .slice(0, 2)
+                  : "U"}
+              </span>
+            )}
+          </div>
+
+          {/* Chỉ hiện khi đang Edit */}
+          {isEditing && (
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="absolute bottom-0 right-0 w-8 h-8 bg-[#2D1B4E] rounded-full border-2 border-white shadow-sm flex items-center justify-center hover:bg-opacity-90 transition"
+            >
+              <span className="material-symbols-outlined text-white text-[18px]">
+                photo_camera
+              </span>
+            </button>
           )}
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleAvatarChange}
+            className="hidden"
+          />
         </div>
-        <button 
-          onClick={() => fileInputRef.current?.click()}
-          className="absolute bottom-0 right-0 bg-[#2D1B4E] p-2 rounded-full text-white border-2 border-white shadow-sm"
-        >
-          <i className="w-4 h-4" data-lucide="camera"></i>
-        </button>
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={handleAvatarChange}
-          accept="image/*"
-          className="hidden"
-        />
-      </div>
 
       {/* Info Section */}
       <div className="flex-1">
