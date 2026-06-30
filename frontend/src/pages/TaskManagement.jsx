@@ -95,7 +95,17 @@ export default function TaskManagement() {
       setTasksForModal(tasks);
     }
   }, [tasks, setTasksForModal]);
-
+ 
+  // Keep selected task detail in sync with the latest task state
+  useEffect(() => {
+    if (selectedTaskDetail) {
+      const current = tasks.find(t => t.id === selectedTaskDetail.id);
+      if (current && current !== selectedTaskDetail) {
+        setSelectedTaskDetail(current);
+      }
+    }
+  }, [tasks, selectedTaskDetail]);
+ 
   const toggleAll = () => {
     if (selectedTasks.length === tasks.length) {
       setSelectedTasks([]);
@@ -208,10 +218,10 @@ export default function TaskManagement() {
       {/* Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
-          <div className="flex items-center text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">
-            <span className="hover:text-primary cursor-pointer transition-colors" onClick={() => navigate(`/dashboard/spaces${location.search}`)}>Tasks</span>
+          <div className="flex items-center text-[10px] font-bold uppercase tracking-wider mb-1">
+            <span className="cursor-pointer text-gray-500 transition-colors hover:text-[#5e4db2] active:text-[#5e4db2]" onClick={() => navigate(`/dashboard/spaces${location.search}`)}>Tasks</span>
             <i className="w-3 h-3 mx-2 text-gray-400 material-symbols-outlined text-[12px]">chevron_right</i>
-            <span className="hover:text-primary cursor-pointer transition-colors" onClick={() => navigate(`/dashboard/spaces${location.search}`)}>Space Management</span>
+            <span className="cursor-pointer text-gray-500 transition-colors hover:text-[#5e4db2] active:text-[#5e4db2]" onClick={() => navigate(`/dashboard/spaces${location.search}`)}>Space Management</span>
           </div>
           <h1 className="text-base font-bold text-[#5e4db2]">Task Management</h1>
         </div>
@@ -240,7 +250,7 @@ export default function TaskManagement() {
           <div className="relative flex items-center">
             <span className="material-symbols-outlined absolute left-3 text-outline text-[20px]">search</span>
             <input
-              className="pl-10 pr-4 py-1.5 bg-white border border-outline-variant rounded text-[11px] w-[220px] focus:ring-2 focus:ring-primary focus:border-primary outline-none"
+              className="pl-10 pr-4 py-1.5 bg-white border border-outline-variant rounded text-[11px] w-[220px] focus:ring-2 focus:ring-[#5E4DB2]/30 focus:border-[#5E4DB2] outline-none text-[#32275E]"
               placeholder="Filter by ID or title..."
               type="text"
             />
@@ -734,7 +744,10 @@ export default function TaskManagement() {
         task={selectedTaskDetail}
         onClose={() => setSelectedTaskDetail(null)}
         tasks={tasks}
-        onUpdateTask={handleUpdateTask}
+        onUpdateTask={(updatedTask) => {
+          setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
+          setSelectedTaskDetail(updatedTask);
+        }}
       />
 
       <DeleteTaskModal
@@ -786,7 +799,8 @@ function KanbanColumn({ title, tasks, setTasks, onCreateTask, onOpenDetail, colo
 }
 
 function TaskCard({ task, index, totalCount, setTasks, onOpenDetail }) {
-  const { id, title, date, pts, priority, status } = task;
+  const { id, title, date, pts, priority, status, attachments = [] } = task;
+  const previewImage = attachments.find(att => att.type === 'image' && att.previewUrl)?.previewUrl;
   const [isEditing, setIsEditing] = React.useState(false);
   const [tempPts, setTempPts] = React.useState(pts);
   const [showMenu, setShowMenu] = React.useState(false);
@@ -970,6 +984,11 @@ function TaskCard({ task, index, totalCount, setTasks, onOpenDetail }) {
               <span className="text-[11px] font-semibold">{date}</span>
             </div>
           </div>
+          {previewImage ? (
+            <div className="mb-3 overflow-hidden rounded-xl">
+              <img src={previewImage} alt={`Preview for ${title}`} className="w-full h-28 object-cover rounded-xl" />
+            </div>
+          ) : null}
           <div className="flex justify-between items-center mt-auto">
             <div className="flex items-center gap-2">
               <span className={`text-[10px] text-outline font-bold uppercase ${status === 'Done' ? 'line-through' : ''}`}>{id}</span>
