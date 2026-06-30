@@ -6,7 +6,37 @@ import SprintInfoPopover from '../components/tasks/SprintInfoPopover';
 import CompleteSprintModal from '../components/tasks/CompleteSprintModal';
 import TaskDetailModal from '../components/tasks/TaskDetailModal';
 import DeleteTaskModal from '../components/tasks/DeleteTaskModal';
- 
+
+const availableAssignees = [
+  { name: 'Unassigned', initials: '', color: '#8e8f90', icon: 'person', textColor: '#FFFFFF' },
+  { name: 'Pham Tien', initials: 'PT', color: '#2f3650', textColor: '#FFFFFF' },
+  { name: 'Hoang Hoa', initials: 'HH', color: '#F97316', textColor: '#FFFFFF' },
+  { name: 'Trong Nghia', initials: 'TN', color: '#14B8A6', textColor: '#FFFFFF' }
+];
+
+const assigneeProfiles = {
+  'Pham Tien': { initials: 'PT', color: '#2f3650', textColor: '#FFFFFF' },
+  'Hoang Hoa': { initials: 'HH', color: '#F97316', textColor: '#FFFFFF' },
+  'Trong Nghia': { initials: 'TN', color: '#14B8A6', textColor: '#FFFFFF' },
+  'Unassigned': { initials: 'UN', color: '#8e8f90', textColor: '#FFFFFF' }
+};
+
+const getInitials = (name) => {
+  if (!name) return 'UN';
+  const parts = name.trim().split(' ').filter(Boolean);
+  if (parts.length === 0) return 'UN';
+  return parts.slice(0, 2).map(part => part[0]).join('').toUpperCase();
+};
+
+const getAssigneeProfile = (assignee) => {
+  if (!assignee) return assigneeProfiles['Unassigned'];
+  return assigneeProfiles[assignee] || {
+    initials: getInitials(assignee),
+    color: '#9CA3AF',
+    textColor: '#FFFFFF'
+  };
+};
+
 export default function TaskManagement() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -15,7 +45,7 @@ export default function TaskManagement() {
   const [selectedTasks, setSelectedTasks] = useState([]);
   const [isSprintExpanded, setIsSprintExpanded] = useState(true);
   const [selectedTaskDetail, setSelectedTaskDetail] = useState(null);
- 
+
   // Sprint popover and complete modal states
   const [isSprintInfoOpen, setIsSprintInfoOpen] = useState(false);
   const [isCompleteSprintOpen, setIsCompleteSprintOpen] = useState(false);
@@ -24,7 +54,7 @@ export default function TaskManagement() {
   const [selectedDate, setSelectedDate] = useState(null);
   const [viewMonth, setViewMonth] = useState(5); // June
   const [viewYear, setViewYear] = useState(2026);
- 
+
   const getDaysInMonth = (year, month) => {
     const days = [];
     const startDay = new Date(year, month, 1).getDay();
@@ -33,29 +63,32 @@ export default function TaskManagement() {
     for (let d = 1; d <= numDays; d++) days.push(d);
     return days;
   };
- 
+
   const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
- 
+
   // Dynamic sprints (Sprint 2, 3, ...) created via "Create sprint" button
   const [extraSprints, setExtraSprints] = useState([]);
   const [expandedSprints, setExpandedSprints] = useState({});
   // Which sprint's ... menu is open (null = none, 'sprint-1' = Sprint 1, sprint.id = extra sprint)
   const [openSprintMenuId, setOpenSprintMenuId] = useState(null);
- 
+
   const [tasks, setTasks] = useState([
-    { id: "TM-104", title: "Infrastructure setup", assignee: "Alex Rivera", pts: 4, status: "New", priority: "High", date: "Jun 24, 2026", description: "" },
-    { id: "TM-301", title: "API Documentation update", assignee: "Sarah Chen", pts: 3, status: "In Progress", priority: "Medium", date: "Jun 28, 2026", description: "" },
-    { id: "TM-89", title: "Checkout flow mobile fix", assignee: "Jordan Smith", pts: 5, status: "In Testing", priority: "High", date: "Jul 02, 2026", description: "" },
-    { id: "TM-102", title: "Security Protocols Audit", assignee: "Alex Rivera", pts: 8, status: "Done", priority: "High", date: "Jun 20, 2026", description: "" },
-    { id: "TM-212", title: "SSO Authentication implementation", assignee: "Sarah Chen", pts: 2, status: "In Progress", priority: "Medium", date: "Jun 25, 2026", description: "" },
-    { id: "TM-105", title: "API Integration & Testing", assignee: "Jordan Smith", pts: 3, status: "Pending Review", priority: "High", date: "Jul 05, 2026", description: "" },
-    { id: "TM-402", title: "User Feedback UI Refactor", assignee: "Alex Rivera", pts: 2, status: "Need Revision", priority: "Low", date: "Jul 10, 2026", description: "" },
-    { id: "TM-505", title: "Database Migration Script", assignee: "Sarah Chen", pts: 5, status: "New", priority: "High", date: "Jul 12, 2026", description: "" },
-    { id: "TM-610", title: "Dashboard Charts optimization", assignee: "Jordan Smith", pts: 3, status: "In Testing", priority: "Medium", date: "Jul 15, 2026", description: "" },
-    { id: "TM-701", title: "Mobile App Performance Tuning", assignee: "Jordan Smith", pts: 4, status: "In Testing", priority: "Medium", date: "Jul 18, 2026", description: "" },
-    { id: "TM-802", title: "Push Notification Service", assignee: "Sarah Chen", pts: 3, status: "New", priority: "High", date: "Jul 20, 2026", description: "" },
+    { id: "TM-104", title: "Infrastructure setup", assignee: "Pham Tien", pts: 4, status: "New", priority: "High", date: "Jun 24, 2026", description: "" },
+    { id: "TM-301", title: "API Documentation update", assignee: "Hoang Hoa", pts: 3, status: "In Progress", priority: "Medium", date: "Jun 28, 2026", description: "" },
+    { id: "TM-89", title: "Checkout flow mobile fix", assignee: "Trong Nghia", pts: 5, status: "In Testing", priority: "High", date: "Jul 02, 2026", description: "" },
+    { id: "TM-102", title: "Security Protocols Audit", assignee: "Pham Tien", pts: 8, status: "Done", priority: "High", date: "Jun 20, 2026", description: "" },
+    { id: "TM-212", title: "SSO Authentication implementation", assignee: "Hoang Hoa", pts: 2, status: "In Progress", priority: "Medium", date: "Jun 25, 2026", description: "" },
+    { id: "TM-105", title: "API Integration & Testing", assignee: "Trong Nghia", pts: 3, status: "Pending Review", priority: "High", date: "Jul 05, 2026", description: "" },
+    { id: "TM-402", title: "User Feedback UI Refactor", assignee: "Pham Tien", pts: 2, status: "Need Revision", priority: "Low", date: "Jul 10, 2026", description: "" },
+    { id: "TM-505", title: "Database Migration Script", assignee: "Hoang Hoa", pts: 5, status: "New", priority: "High", date: "Jul 12, 2026", description: "" },
+    { id: "TM-610", title: "Dashboard Charts optimization", assignee: "Trong Nghia", pts: 3, status: "In Testing", priority: "Medium", date: "Jul 15, 2026", description: "" },
+    { id: "TM-701", title: "Mobile App Performance Tuning", assignee: "Trong Nghia", pts: 4, status: "In Testing", priority: "Medium", date: "Jul 18, 2026", description: "" },
+    { id: "TM-802", title: "Push Notification Service", assignee: "Hoang Hoa", pts: 3, status: "New", priority: "High", date: "Jul 20, 2026", description: "" },
   ]);
- 
+
+  const [selectedAssigneeFilter, setSelectedAssigneeFilter] = useState('All');
+
+
   // Sync tasks with MainLayout context for the CreateTaskModal's RichTextEditor
   useEffect(() => {
     if (setTasksForModal) {
@@ -80,21 +113,21 @@ export default function TaskManagement() {
       setSelectedTasks(tasks.map(t => t.id));
     }
   };
- 
+
   const toggleTask = (id) => {
     setSelectedTasks(prev =>
       prev.includes(id) ? prev.filter(tid => tid !== id) : [...prev, id]
     );
   };
- 
+
   const onDragEnd = (result) => {
     const { destination, source, draggableId } = result;
     if (!destination) return;
     if (destination.droppableId === source.droppableId && destination.index === source.index) return;
- 
+
     const updatedTasks = Array.from(tasks);
     const taskIndex = updatedTasks.findIndex(t => t.id === draggableId);
- 
+
     if (taskIndex !== -1) {
       updatedTasks[taskIndex] = {
         ...updatedTasks[taskIndex],
@@ -103,16 +136,16 @@ export default function TaskManagement() {
       setTasks(updatedTasks);
     }
   };
- 
+
   const switchView = (newView) => {
     setView(newView);
   };
- 
+
   const handleDeleteTask = (taskId) => {
     setTasks(prev => prev.filter(t => t.id !== taskId));
     setTaskToDelete(null);
   };
- 
+
   const handleCreateSprint = () => {
     // Calculate next sprint number (Sprint 1 is fixed + existing extra sprints)
     const nextNum = extraSprints.length + 2;
@@ -132,16 +165,16 @@ export default function TaskManagement() {
     setExtraSprints(prev => [...prev, newSprint]);
     setExpandedSprints(prev => ({ ...prev, [newSprint.id]: true }));
   };
- 
+
   const toggleSprintExpanded = (sprintId) => {
     setExpandedSprints(prev => ({ ...prev, [sprintId]: !prev[sprintId] }));
   };
- 
+
   const handleDeleteExtraSprint = (sprintId) => {
     setExtraSprints(prev => prev.filter(s => s.id !== sprintId));
     setOpenSprintMenuId(null);
   };
- 
+
   // Close sprint menus when clicking outside
   useEffect(() => {
     if (!openSprintMenuId) return;
@@ -153,8 +186,16 @@ export default function TaskManagement() {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [openSprintMenuId]);
- 
+
   const filteredTasks = tasks.filter(task => {
+    if (selectedAssigneeFilter && selectedAssigneeFilter !== 'All') {
+      if (selectedAssigneeFilter === 'Unassigned') {
+        if (task.assignee) return false;
+      } else if (task.assignee !== selectedAssigneeFilter) {
+        return false;
+      }
+    }
+
     if (selectedDate) {
       try {
         const selTime = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate()).getTime();
@@ -166,7 +207,12 @@ export default function TaskManagement() {
     }
     return true;
   });
- 
+
+  const handleUpdateTask = (updatedTask) => {
+    setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
+    setSelectedTaskDetail(updatedTask);
+  };
+
   return (
     <div className="px-6 pb-6 pt-10 flex flex-col bg-[#F4F6F8] text-on-surface" style={{ height: '100%', overflow: 'hidden', position: 'relative' }} id="app-canvas">
       {/* Header Section */}
@@ -193,10 +239,10 @@ export default function TaskManagement() {
             <span className="material-symbols-outlined text-[16px]">grid_view</span>
             Board
           </button>
- 
+
         </div>
       </div>
- 
+
       {/* Filters Section */}
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div className="flex flex-wrap items-center gap-3">
@@ -246,27 +292,46 @@ export default function TaskManagement() {
           </div>
           {/* Assignee Filter */}
           <div className="relative group">
-            <button className="flex items-center ml-2 hover:opacity-80 transition-opacity">
+            <button
+              type="button"
+              className="flex items-center ml-1 hover:opacity-70 transition-opacity"
+            >
               <div className="flex -space-x-1">
-                <div className="w-7 h-7 rounded-full bg-gray-200 border-2 border-white flex items-center justify-center text-[10px] font-bold">PT</div>
-                <div className="w-7 h-7 rounded-full bg-orange-500 border-2 border-white flex items-center justify-center text-[10px] font-bold text-white">HH</div>
-                <div className="w-7 h-7 rounded-full bg-teal-500 border-2 border-white flex items-center justify-center text-[10px] font-bold text-white">TN</div>
+                {availableAssignees.slice(1).map(user => (
+                  <div
+                    key={user.name}
+                    className="w-7 h-7 rounded-full flex items-center justify-center border-2 border-gray text-[11px] font-medium"
+                    style={{ backgroundColor: user.color, color: user.textColor || '#676464' }}
+                  >
+                    {user.initials}
+                  </div>
+                ))}
               </div>
             </button>
-            <div className="absolute top-full left-0 mt-2 w-56 bg-white border border-outline-variant rounded-xl shadow-2xl hidden group-hover:block z-50 overflow-hidden">
+            <div className="absolute top-full left-0 mt-2 w-56 bg-white border border-outline-variant rounded-xl shadow-2xl z-50 overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150">
               <div className="py-1">
-                {[
-                  { name: 'Unassigned', initial: '', color: 'bg-gray-100', icon: 'person' },
-                  { name: 'Pham Tien', initial: 'PT', color: 'bg-[#cdddff]' },
-                  { name: 'Hoang Hoa', initial: 'HH', color: 'bg-orange-500', textColor: 'text-white' },
-                  { name: 'Trong Nghia', initial: 'TN', color: 'bg-teal-500', textColor: 'text-white' }
-                ].map(user => (
-                  <div key={user.name} className="flex items-center gap-3 px-4 py-2 text-[11px] text-on-surface hover:bg-surface-container transition-colors cursor-pointer">
-                    <div className={`w-6 h-6 rounded-full ${user.color} flex items-center justify-center text-[9px] font-bold ${user.textColor || 'text-on-surface'}`}>
-                      {user.initial || <span className="material-symbols-outlined text-[14px]">{user.icon}</span>}
+                <button
+                  type="button"
+                  onClick={() => setSelectedAssigneeFilter('All')}
+                  className="w-full text-left px-4 py-2 text-[11px] hover:bg-[#EBF0FF] transition-colors"
+                >
+                  All assignees
+                </button>
+                {availableAssignees.map(user => (
+                  <button
+                    key={user.name}
+                    type="button"
+                    onClick={() => setSelectedAssigneeFilter(user.name)}
+                    className="w-full flex items-center gap-3 px-4 py-2 text-[11px] hover:bg-[#EBF0FF] transition-colors"
+                  >
+                    <div
+                      className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold"
+                      style={{ backgroundColor: user.color, color: user.textColor || '#111' }}
+                    >
+                      {user.initials || <span className="material-symbols-outlined">{user.icon}</span>}
                     </div>
-                    {user.name}
-                  </div>
+                    <span>{user.name}</span>
+                  </button>
                 ))}
               </div>
             </div>
@@ -291,7 +356,7 @@ export default function TaskManagement() {
               </button>
             </div>
           )}
- 
+
           {/* Date Filter */}
           <div className="relative group">
             <button className="flex items-center gap-2 px-3 py-1.5 bg-white border border-outline-variant rounded hover:bg-surface-container transition-colors shadow-sm">
@@ -302,7 +367,7 @@ export default function TaskManagement() {
                   : 'Date'}
               </span>
             </button>
- 
+
             {/* Calendar Dropdown */}
             <div className="absolute top-full right-0 mt-2 w-[280px] bg-white border border-outline-variant rounded-xl shadow-2xl hidden group-hover:block z-50 overflow-hidden">
               <div className="p-4">
@@ -343,13 +408,13 @@ export default function TaskManagement() {
                     </button>
                   </div>
                 </div>
- 
-                 <div className="grid grid-cols-7 gap-1 text-center mb-2">
+
+                <div className="grid grid-cols-7 gap-1 text-center mb-2">
                   {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
                     <span key={day} className="text-[10px] font-bold text-outline uppercase">{day}</span>
                   ))}
                 </div>
- 
+
                 <div className="grid grid-cols-7 gap-1">
                   {getDaysInMonth(viewYear, viewMonth).map((day, i) => {
                     if (day === null) {
@@ -389,7 +454,7 @@ export default function TaskManagement() {
           </div>
         </div>
       </div>
- 
+
       {/* BOARD VIEW */}
       {view === 'board' && (
         <div style={{ flex: '1 1 0', minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -410,7 +475,7 @@ export default function TaskManagement() {
           </DragDropContext>
         </div>
       )}
- 
+
       {/* LIST VIEW */}
       {view === 'list' && (
         <div style={{ flex: '1 1 0', minHeight: 0, overflowY: 'auto', paddingBottom: '16px' }}>
@@ -510,6 +575,7 @@ export default function TaskManagement() {
                         onToggle={() => toggleTask(task.id)}
                         onOpenDetail={() => setSelectedTaskDetail(task)}
                         onDelete={() => setTaskToDelete(task)}
+                        onUpdateAssignee={(newAssignee) => setTasks(prev => prev.map(t => t.id === task.id ? { ...t, assignee: newAssignee === 'Unassigned' ? '' : newAssignee } : t))}
                       />
                     ))}
                   </tbody>
@@ -529,7 +595,7 @@ export default function TaskManagement() {
               </div>
             )}
           </div>
- 
+
           {/* EXTRA SPRINTS (created dynamically) */}
           {extraSprints.map((sprint) => (
             <div key={sprint.id} className="mt-4 bg-white border border-outline-variant rounded-lg overflow-hidden shadow-sm">
@@ -590,7 +656,7 @@ export default function TaskManagement() {
                   </div>
                 </div>
               </div>
- 
+
               {/* Sprint Body - Empty State */}
               {expandedSprints[sprint.id] && (
                 <div className="border-t border-dashed border-outline-variant/60 p-6 flex flex-col items-center justify-center bg-surface-container-lowest min-h-[80px]">
@@ -598,7 +664,7 @@ export default function TaskManagement() {
                   <span className="text-[11px] text-outline italic">No tasks in this sprint yet. Drag tasks here or create new ones.</span>
                 </div>
               )}
- 
+
               {/* + Create button below sprint body */}
               {expandedSprints[sprint.id] && (
                 <div className="px-4 py-2 border-t border-outline-variant/30 bg-white">
@@ -613,7 +679,7 @@ export default function TaskManagement() {
               )}
             </div>
           ))}
- 
+
           {/* TASK LIST / BACKLOG SECTION */}
           <div className="mt-4 flex flex-col gap-2" id="backlog-section">
             <div className="flex items-center justify-between bg-surface-container-low/30 p-2 rounded-t-lg border-x border-t border-outline-variant">
@@ -637,26 +703,26 @@ export default function TaskManagement() {
                 </button>
               </div>
             </div>
- 
+
             <div className="border border-dashed border-outline-variant rounded-b-lg p-6 flex flex-col items-center justify-center bg-surface-container-lowest">
               <span className="text-[11px] text-outline italic">Your task list is empty.</span>
             </div>
-  
+
             <button
               onClick={() => setShowCreateModal && setShowCreateModal(true)}
               className="flex items-center gap-2 mt-1 px-1 text-outline hover:text-primary transition-colors group w-fit"
             >
-                <span className="material-symbols-outlined text-[18px] group-hover:scale-110 transition-transform">
-                    add
-                </span>
-                <span className="text-[12px] font-medium">
-                    Create
-                </span>
+              <span className="material-symbols-outlined text-[18px] group-hover:scale-110 transition-transform">
+                add
+              </span>
+              <span className="text-[12px] font-medium">
+                Create
+              </span>
             </button>
           </div>
         </div>
       )}
- 
+
       {/* Popovers & Modals */}
       <SprintInfoPopover
         isOpen={isSprintInfoOpen}
@@ -665,7 +731,7 @@ export default function TaskManagement() {
         completedTasksCount={tasks.filter(t => t.status === 'Done').length}
         openTasksCount={tasks.filter(t => t.status !== 'Done').length}
       />
- 
+
       <CompleteSprintModal
         isOpen={isCompleteSprintOpen}
         onClose={() => setIsCompleteSprintOpen(false)}
@@ -673,7 +739,7 @@ export default function TaskManagement() {
         completedTasksCount={tasks.filter(t => t.status === 'Done').length}
         openTasksCount={tasks.filter(t => t.status !== 'Done').length}
       />
- 
+
       <TaskDetailModal
         task={selectedTaskDetail}
         onClose={() => setSelectedTaskDetail(null)}
@@ -683,7 +749,7 @@ export default function TaskManagement() {
           setSelectedTaskDetail(updatedTask);
         }}
       />
- 
+
       <DeleteTaskModal
         isOpen={!!taskToDelete}
         onClose={() => setTaskToDelete(null)}
@@ -693,14 +759,14 @@ export default function TaskManagement() {
     </div>
   );
 }
- 
+
 function KanbanColumn({ title, tasks, setTasks, onCreateTask, onOpenDetail, color = 'outline' }) {
   const headerClass = `bg-[#E0E8FF] border-[#ADC4FF] ${title === 'Need Revision' ? 'text-[#BA1A1A]' :
     title === 'Done' ? 'text-[#006D3A]' :
       title === 'Cancelled' ? 'text-[#475467]' :
         'text-[#003d9b]'
     }`;
- 
+
   return (
     <div className="kanban-column group flex flex-col bg-[#F3F4FC] border border-outline-variant/50 rounded-xl p-2 min-w-[300px]" style={{ height: '100%', maxHeight: '100%', flex: '0 0 300px' }}>
       <div className={`flex justify-between items-center px-4 py-2 rounded-xl border-b-2 ${headerClass} mb-1`}>
@@ -731,21 +797,24 @@ function KanbanColumn({ title, tasks, setTasks, onCreateTask, onOpenDetail, colo
     </div>
   );
 }
- 
+
 function TaskCard({ task, index, totalCount, setTasks, onOpenDetail }) {
   const { id, title, date, pts, priority, status, attachments = [] } = task;
   const previewImage = attachments.find(att => att.type === 'image' && att.previewUrl)?.previewUrl;
   const [isEditing, setIsEditing] = React.useState(false);
   const [tempPts, setTempPts] = React.useState(pts);
   const [showMenu, setShowMenu] = React.useState(false);
+  const [showAssigneeMenu, setShowAssigneeMenu] = React.useState(false);
   const [showMoveSubMenu, setShowMoveSubMenu] = React.useState(false);
   const [showStatusSubMenu, setShowStatusSubMenu] = React.useState(false);
   const [menuPos, setMenuPos] = React.useState({ top: 0, left: 0 });
   const btnRef = useRef(null);
   const menuRef = useRef(null);
- 
+  const assigneeBtnRef = useRef(null);
+  const assigneeMenuRef = useRef(null);
+
   const statuses = ['New', 'In Progress', 'In Testing', 'Pending Review', 'Need Revision', 'Done', 'Cancelled'];
- 
+
   // Đóng menu khi click ra ngoài
   useEffect(() => {
     if (!showMenu) return;
@@ -760,7 +829,19 @@ function TaskCard({ task, index, totalCount, setTasks, onOpenDetail }) {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showMenu]);
- 
+
+  useEffect(() => {
+    if (!showAssigneeMenu) return;
+    const handleClickOutside = (e) => {
+      if (assigneeMenuRef.current && !assigneeMenuRef.current.contains(e.target) &&
+        assigneeBtnRef.current && !assigneeBtnRef.current.contains(e.target)) {
+        setShowAssigneeMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showAssigneeMenu]);
+
   const handleMenuToggle = (e) => {
     e.stopPropagation();
     if (showMenu) {
@@ -778,7 +859,7 @@ function TaskCard({ task, index, totalCount, setTasks, onOpenDetail }) {
     setMenuPos({ top: rect.bottom + 4, left });
     setShowMenu(true);
   };
- 
+
   return (
     <Draggable draggableId={id} index={index}>
       {(provided, snapshot) => (
@@ -789,8 +870,8 @@ function TaskCard({ task, index, totalCount, setTasks, onOpenDetail }) {
           style={{ ...provided.draggableProps.style }}
           className={`relative bg-surface-container-lowest p-2.5 border border-outline-variant rounded shadow-sm hover:bg-surface-container-low transition-all group ${status === 'Cancelled' ? 'opacity-40' : 'group-hover:text-[#1E40AF]'} ${snapshot.isDragging ? 'shadow-xl ring-2 ring-primary/20 scale-[1.02] z-50' : ''}`}
           onClick={(e) => {
-             if (e.defaultPrevented) return;
-             onOpenDetail && onOpenDetail(task);
+            if (e.defaultPrevented) return;
+            onOpenDetail && onOpenDetail(task);
           }}
         >
           <div className="flex justify-between items-start mb-2 gap-2">
@@ -808,7 +889,7 @@ function TaskCard({ task, index, totalCount, setTasks, onOpenDetail }) {
               </button>
             </div>
           </div>
- 
+
           {/* Portal Menu - nổi lên trên mọi thứ với position:fixed */}
           {showMenu && createPortal(
             <div
@@ -831,7 +912,7 @@ function TaskCard({ task, index, totalCount, setTasks, onOpenDetail }) {
                   <span>Move work item</span>
                   <span className="material-symbols-outlined text-[16px]">chevron_right</span>
                 </button>
- 
+
                 {/* Menu con hiển thị khi showMoveSubMenu = true */}
                 {showMoveSubMenu && (
                   <div
@@ -853,7 +934,7 @@ function TaskCard({ task, index, totalCount, setTasks, onOpenDetail }) {
                   </div>
                 )}
               </div>
- 
+
               {/* 2. Change status */}
               {/* ĐÃ XÓA onMouseEnter VÀ onMouseLeave Ở ĐÂY */}
               <div className="relative">
@@ -869,7 +950,7 @@ function TaskCard({ task, index, totalCount, setTasks, onOpenDetail }) {
                   <span>Change status</span>
                   <span className="material-symbols-outlined text-[16px]">chevron_right</span>
                 </button>
- 
+
                 {/* Submenu con hiển thị danh sách status (New, In Progress,...) */}
                 {showStatusSubMenu && (
                   <div
@@ -895,8 +976,8 @@ function TaskCard({ task, index, totalCount, setTasks, onOpenDetail }) {
             </div>,
             document.body
           )}
- 
- 
+
+
           <div className="flex items-center gap-2 mb-4">
             <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-sm bg-surface-container text-on-surface-variant">
               <span className="material-symbols-outlined text-[14px]">calendar_month</span>
@@ -938,7 +1019,7 @@ function TaskCard({ task, index, totalCount, setTasks, onOpenDetail }) {
                 </div>
               )}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 relative">
               {priority === 'High' ? (
                 <span className="material-symbols-outlined text-[#BA1A1A] text-[20px] font-bold">keyboard_arrow_up</span>
               ) : priority === 'Medium' ? (
@@ -946,7 +1027,45 @@ function TaskCard({ task, index, totalCount, setTasks, onOpenDetail }) {
               ) : (
                 <span className="material-symbols-outlined text-blue-500 text-[20px] font-bold">keyboard_arrow_down</span>
               )}
-              <div className="w-6 h-6 rounded-full bg-gray-200 border border-outline-variant"></div>
+              <button
+                ref={assigneeBtnRef}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowAssigneeMenu(prev => !prev);
+                }}
+                className="w-6 h-6 rounded-full border border-outline-variant flex items-center justify-center text-[10px] font-bold"
+                style={{ backgroundColor: getAssigneeProfile(task.assignee).color, color: getAssigneeProfile(task.assignee).textColor || '#111' }}
+              >
+                {getAssigneeProfile(task.assignee).initials || <span className="material-symbols-outlined">person</span>}
+              </button>
+              {showAssigneeMenu && (
+                <div
+                  ref={assigneeMenuRef}
+                  className="absolute right-0 top-full mt-2 w-40 bg-white border border-outline-variant rounded-xl shadow-2xl z-50 overflow-hidden"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {availableAssignees.map(user => (
+                    <button
+                      key={user.name}
+                      type="button"
+                      onClick={() => {
+                        setTasks(prev => prev.map(t => t.id === id ? { ...t, assignee: user.name === 'Unassigned' ? '' : user.name } : t));
+                        setShowAssigneeMenu(false);
+                      }}
+                      className="w-full px-3 py-2 flex items-center gap-2 text-[11px] text-left hover:bg-[#EBF0FF] transition-colors"
+                    >
+                      <div
+                        className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold"
+                        style={{ backgroundColor: user.color, color: user.textColor || '#111' }}
+                      >
+                        {user.initials || <span className="material-symbols-outlined">{user.icon}</span>}
+                      </div>
+                      <span>{user.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -954,8 +1073,8 @@ function TaskCard({ task, index, totalCount, setTasks, onOpenDetail }) {
     </Draggable>
   );
 }
- 
-function TaskRow({ id, title, assignee, pts, status, date, priority, isSelected, isAnySelected, onToggle, onOpenDetail, onDelete }) {
+
+function TaskRow({ id, title, assignee, pts, status, date, priority, isSelected, isAnySelected, onToggle, onOpenDetail, onDelete, onUpdateAssignee }) {
   const statusClass = status === 'Need Revision'
     ? 'bg-[#FFF0F0] text-[#BA1A1A]'
     : status === 'Done'
@@ -963,7 +1082,23 @@ function TaskRow({ id, title, assignee, pts, status, date, priority, isSelected,
       : status === 'Cancelled' || status === 'New'
         ? 'bg-[#F2F4F7] text-[#475467]'
         : 'bg-[#E0E8FF] text-[#003d9b]';
- 
+
+  const [showAssigneeMenu, setShowAssigneeMenu] = useState(false);
+  const assigneeBtnRef = useRef(null);
+  const assigneeMenuRef = useRef(null);
+
+  useEffect(() => {
+    if (!showAssigneeMenu) return;
+    const handleClickOutside = (e) => {
+      if (assigneeMenuRef.current && !assigneeMenuRef.current.contains(e.target) &&
+        assigneeBtnRef.current && !assigneeBtnRef.current.contains(e.target)) {
+        setShowAssigneeMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showAssigneeMenu]);
+
   return (
     <tr
       className={`hover:bg-surface-container-low/50 transition-colors cursor-pointer ${isSelected ? 'bg-[#e6f0ff]' : ''}`}
@@ -987,9 +1122,58 @@ function TaskRow({ id, title, assignee, pts, status, date, priority, isSelected,
       </td>
       <td className={`px-4 py-2 font-semibold text-[11px] ${isSelected ? 'text-blue-700' : 'text-on-surface'}`}>{title}</td>
       <td className="px-4 py-2">
-        <div className="flex items-center gap-2">
-          <div className="w-5 h-5 rounded-full bg-gray-200"></div>
-          <span className="text-[11px]">{assignee}</span>
+        <div className="relative inline-flex items-center">
+          {(() => {
+            const profile = getAssigneeProfile(assignee);
+            return (
+              <div className="relative">
+                <button
+                  ref={assigneeBtnRef}
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowAssigneeMenu(prev => !prev);
+                  }}
+                  className="flex items-center gap-2 rounded-xl bg-white px-2 py-1 text-[11px] hover:bg-[#F4F5F7] transition-colors"
+                >
+                  <div
+                    className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold"
+                    style={{ backgroundColor: profile.color, color: profile.textColor || '#111' }}
+                  >
+                    {profile.initials}
+                  </div>
+                  <span>{assignee || 'Unassigned'}</span>
+                </button>
+                {showAssigneeMenu && (
+                  <div
+                    ref={assigneeMenuRef}
+                    className="absolute left-0 top-full mt-2 w-44 bg-white border border-outline-variant rounded-xl shadow-2xl z-50 overflow-hidden"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {availableAssignees.map(user => (
+                      <button
+                        key={user.name}
+                        type="button"
+                        onClick={() => {
+                          onUpdateAssignee && onUpdateAssignee(user.name === 'Unassigned' ? '' : user.name);
+                          setShowAssigneeMenu(false);
+                        }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-left text-[11px] hover:bg-[#EBF0FF] transition-colors"
+                      >
+                        <div
+                          className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold"
+                          style={{ backgroundColor: user.color, color: user.textColor || '#111' }}
+                        >
+                          {user.initials || <span className="material-symbols-outlined">{user.icon}</span>}
+                        </div>
+                        <span>{user.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </div>
       </td>
       <td className="px-4 py-2 text-center">
@@ -1019,4 +1203,3 @@ function TaskRow({ id, title, assignee, pts, status, date, priority, isSelected,
     </tr>
   );
 }
- 
