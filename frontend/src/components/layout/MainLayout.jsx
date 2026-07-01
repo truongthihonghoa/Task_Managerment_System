@@ -1,23 +1,147 @@
-import React, { useEffect, useState } from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import React, { useEffect, useState, useRef } from 'react';
+import { Outlet, Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import taskflowLogo from '../../assets/taskflow-logo.png';
 import CreateTaskModal from '../tasks/CreateTaskModal';
-
+import NotificationDropdown from '../notifications/NotificationDropdown';
 export default function MainLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [tasksForModal, setTasksForModal] = useState([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  // Tự động kích hoạt Lucide Icons từ CDN khi component mount
+  const [showNotifications, setShowNotifications] = useState(false);
+  
+  // Refs hỗ trợ đóng dropdown khi click ra ngoài
+  const dropdownRef = useRef(null);
+  const bellRef = useRef(null);
+
+  const roleParam = searchParams.get('role')?.toUpperCase();
+  const currentRole = roleParam === 'USER' ? 'USER' : 'ADMIN';
+
+  // State dữ liệu thông báo giả lập để tính toán badge số lượng
+  const [allNotifications, setAllNotifications] = useState([
+    {
+      NOTI_id: 1,
+      type: 'task_assigned',
+      task_name: 'Design Dashboard',
+      triggered_by_name: 'Hoa',
+      triggered_by_avatar: true,
+      triggered_by_initials: 'H',
+      is_read: false,
+      created_at: '2 min ago',
+      group: 'Today',
+      role: 'USER',
+      task_status: 'To Do',
+      space_id: 'spaces'
+    },
+    {
+      NOTI_id: 2,
+      type: 'status_changed',
+      task_name: 'Design System',
+      new_status: 'In Review',
+      triggered_by_name: 'Phạm Thị Cẩm Tiên',
+      triggered_by_avatar: true,
+      triggered_by_initials: 'PT',
+      is_read: false,
+      created_at: '33 sec ago',
+      group: 'Today',
+      role: 'USER',
+      task_status: 'In Progress',
+      space_id: 'spaces'
+    },
+    {
+      NOTI_id: 3,
+      type: 'comment_added',
+      task_name: 'Audit Logs Screen',
+      triggered_by_name: 'Trung',
+      triggered_by_avatar: true,
+      triggered_by_initials: 'T',
+      is_read: true,
+      created_at: 'Yesterday',
+      group: 'Yesterday',
+      role: 'USER',
+      task_status: 'In Progress',
+      space_id: 'spaces'
+    },
+    {
+      NOTI_id: 4,
+      type: 'due_today',
+      task_name: 'Database Migration',
+      is_read: false,
+      created_at: '3 hours ago',
+      group: 'Today',
+      role: 'USER',
+      task_status: 'Pending',
+      space_id: 'spaces'
+    },
+    // ADMIN notifications
+    {
+      NOTI_id: 10,
+      type: 'user_registered',
+      target_user: 'Nguyen Van A',
+      is_read: false,
+      created_at: '5 min ago',
+      group: 'Today',
+      role: 'ADMIN'
+    },
+    {
+      NOTI_id: 11,
+      type: 'account_locked',
+      target_user: 'User123',
+      is_read: false,
+      created_at: '10 min ago',
+      group: 'Today',
+      role: 'ADMIN'
+    },
+    {
+      NOTI_id: 12,
+      type: 'user_verified',
+      target_user: 'Alex Morgan',
+      is_read: true,
+      created_at: '2 days ago',
+      group: 'Earlier',
+      role: 'ADMIN'
+    }
+  ]);
+
+  const filteredNotifications = allNotifications.filter(n => n.role === currentRole);
+  const unreadCount = filteredNotifications.filter(n => !n.is_read).length;
+
+  const handleMarkAllRead = () => {
+    setAllNotifications(allNotifications.map(n =>
+      n.role === currentRole ? { ...n, is_read: true } : n
+    ));
+  };
+
+  // Click outside listener
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (
+        dropdownRef.current && !dropdownRef.current.contains(event.target) &&
+        bellRef.current && !bellRef.current.contains(event.target)
+      ) {
+        setShowNotifications(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Tự động kích hoạt Lucide Icons từ CDN khi component mount hoặc đổi route
   useEffect(() => {
     if (window.lucide) {
       window.lucide.createIcons();
     }
-  }, [location.pathname]); // Re-create icons when path changes
+  }, [location.pathname, showNotifications]);
 
-  const isDashboardActive = location.pathname === '/dashboard';
+  const isDashboardActive = location.pathname === '/dashboard' || location.pathname === '/dashboard/';
   const isTasksActive = location.pathname === '/dashboard/spaces' || location.pathname.includes('/dashboard/tasks');
   const isUsersActive = location.pathname === '/dashboard/users';
+  const isProfileActive = location.pathname === '/dashboard/profile';
+  const isNotificationsActive = location.pathname === '/dashboard/notifications';
+  const isSettingsActive = location.pathname === '/dashboard/notification-settings';
+
 
   return (
     <div className="h-screen flex overflow-hidden font-['Inter'] bg-[#F5F7FA]">
@@ -41,7 +165,7 @@ export default function MainLayout() {
         {/* Logo Section */}
         <div className="p-6 flex items-center space-x-3">
           <div className="w-10 h-10 bg-[#2D1B4E] rounded-lg flex items-center justify-center border-[3px] border-[#2D1B4E] overflow-hidden">
-            <img alt="TaskFlow Logo" className="w-[50px] h-[50px] max-w-none object-contain scale-[1.35]" src={taskflowLogo}/>
+            <img alt="TaskFlow Logo" className="w-[50px] h-[50px] max-w-none object-contain scale-[1.35]" src={taskflowLogo} />
           </div>
           <div>
             <h1 className="text-[#2D1B4E] font-bold text-sm leading-tight">TaskFlow</h1>
@@ -55,13 +179,13 @@ export default function MainLayout() {
           {isDashboardActive ? (
             <div className="relative flex items-center">
               <div className="sidebar-active-indicator"></div>
-              <Link className="flex items-center flex-1 px-4 py-3 bg-[#E0E8FF] text-[#2D1B4E] rounded-xl transition-colors ml-2" to="/dashboard">
+              <Link className="flex items-center flex-1 px-4 py-3 bg-[#E0E8FF] text-[#2D1B4E] rounded-xl transition-colors ml-2" to={`/dashboard${location.search}`}>
                 <i className="w-5 h-5 mr-3 text-[#2D1B4E]" data-lucide="layout-grid"></i>
                 <span className="text-sm font-bold">Dashboard</span>
               </Link>
             </div>
           ) : (
-            <Link className="flex items-center px-4 py-3 text-[#6B7280] hover:bg-gray-50 rounded-xl group transition-colors" to="/dashboard">
+            <Link className="flex items-center px-4 py-3 text-[#6B7280] hover:bg-gray-50 rounded-xl group transition-colors" to={`/dashboard${location.search}`}>
               <i className="w-5 h-5 mr-3" data-lucide="layout-grid"></i>
               <span className="text-sm font-medium">Dashboard</span>
             </Link>
@@ -71,7 +195,7 @@ export default function MainLayout() {
           {isTasksActive ? (
             <div className="relative flex items-center">
               <div className="sidebar-active-indicator"></div>
-              <Link className="flex items-center flex-1 px-4 py-3 bg-[#E0E8FF] text-[#2D1B4E] rounded-xl transition-colors ml-2 justify-between" to="/dashboard/spaces">
+              <Link className="flex items-center flex-1 px-4 py-3 bg-[#E0E8FF] text-[#2D1B4E] rounded-xl transition-colors ml-2 justify-between" to={`/dashboard/spaces${location.search}`}>
                 <div className="flex items-center">
                   <i className="w-5 h-5 mr-3 text-[#2D1B4E]" data-lucide="clipboard-list"></i>
                   <span className="text-sm font-bold">Tasks</span>
@@ -80,7 +204,7 @@ export default function MainLayout() {
               </Link>
             </div>
           ) : (
-            <Link className="flex items-center px-4 py-3 text-[#6B7280] hover:bg-gray-50 rounded-xl group transition-colors justify-between" to="/dashboard/spaces">
+            <Link className="flex items-center px-4 py-3 text-[#6B7280] hover:bg-gray-50 rounded-xl group transition-colors justify-between" to={`/dashboard/spaces${location.search}`}>
               <div className="flex items-center">
                 <i className="w-5 h-5 mr-3" data-lucide="clipboard-list"></i>
                 <span className="text-sm font-medium">Tasks</span>
@@ -93,30 +217,59 @@ export default function MainLayout() {
           {isUsersActive ? (
             <div className="relative flex items-center">
               <div className="sidebar-active-indicator"></div>
-              <Link className="flex items-center flex-1 px-4 py-3 bg-[#E0E8FF] text-[#2D1B4E] rounded-xl transition-colors ml-2" to="/dashboard/users">
+              <Link className="flex items-center flex-1 px-4 py-3 bg-[#E0E8FF] text-[#2D1B4E] rounded-xl transition-colors ml-2" to={`/dashboard/users${location.search}`}>
                 <i className="w-5 h-5 mr-3 text-[#2D1B4E]" data-lucide="users"></i>
                 <span className="text-sm font-bold">Users</span>
               </Link>
             </div>
           ) : (
-            <Link className="flex items-center px-4 py-3 text-[#6B7280] hover:bg-gray-50 rounded-xl transition-colors" to="/dashboard/users">
+            <Link className="flex items-center px-4 py-3 text-[#6B7280] hover:bg-gray-50 rounded-xl transition-colors" to={`/dashboard/users${location.search}`}>
               <i className="w-5 h-5 mr-3" data-lucide="users"></i>
               <span className="text-sm font-medium">Users</span>
             </Link>
           )}
 
-          <Link className="flex items-center px-4 py-3 text-[#6B7280] hover:bg-gray-50 rounded-xl transition-colors" to="#">
-            <i className="w-5 h-5 mr-3" data-lucide="user-circle"></i>
-            <span className="text-sm font-medium">Profile</span>
-          </Link>
-
-          <Link className="flex items-center px-4 py-3 text-[#6B7280] hover:bg-gray-50 rounded-xl transition-colors justify-between" to="#">
-            <div className="flex items-center">
-              <i className="w-5 h-5 mr-3" data-lucide="bell"></i>
-              <span className="text-sm font-medium">Notifications</span>
+          {/* Profile Item */}
+          {isProfileActive ? (
+            <div className="relative flex items-center">
+              <div className="sidebar-active-indicator"></div>
+              <Link className="flex items-center flex-1 px-4 py-3 bg-[#E0E8FF] text-[#2D1B4E] rounded-xl transition-colors ml-2" to={`/dashboard/profile${location.search}`}>
+                <i className="w-5 h-5 mr-3 text-[#2D1B4E]" data-lucide="user-circle"></i>
+                <span className="text-sm font-bold">Profile</span>
+              </Link>
             </div>
-            <div className="w-2 h-2 bg-[#EF4444] rounded-full mr-1"></div>
-          </Link>
+          ) : (
+            <Link className="flex items-center px-4 py-3 text-[#6B7280] hover:bg-gray-50 rounded-xl transition-colors" to={`/dashboard/profile${location.search}`}>
+              <i className="w-5 h-5 mr-3" data-lucide="user-circle"></i>
+              <span className="text-sm font-medium">Profile</span>
+            </Link>
+          )}
+ 
+          {/* Notifications Item */}
+          {isNotificationsActive ? (
+            <div className="relative flex items-center">
+              <div className="sidebar-active-indicator"></div>
+              <Link className="flex items-center flex-1 px-4 py-3 bg-[#E0E8FF] text-[#2D1B4E] rounded-xl transition-colors ml-2 justify-between" to={`/dashboard/notifications${location.search}`}>
+                <div className="flex items-center">
+                  <i className="w-5 h-5 mr-3 text-[#2D1B4E]" data-lucide="bell"></i>
+                  <span className="text-sm font-bold">Notifications</span>
+                </div>
+                {unreadCount > 0 && (
+                  <span className="bg-[#EF4444] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{unreadCount}</span>
+                )}
+              </Link>
+            </div>
+          ) : (
+            <Link className="flex items-center px-4 py-3 text-[#6B7280] hover:bg-gray-50 rounded-xl group transition-colors justify-between" to={`/dashboard/notifications${location.search}`}>
+              <div className="flex items-center">
+                <i className="w-5 h-5 mr-3" data-lucide="bell"></i>
+                <span className="text-sm font-medium">Notifications</span>
+              </div>
+              {unreadCount > 0 && (
+                <span className="bg-[#EF4444] text-white text-[10px] font-bold px-3 py-0.5 rounded-full scale-[0.9]">{unreadCount}</span>
+              )}
+            </Link>
+          )}
         </nav>
 
         {/* Bottom Navigation */}
@@ -125,10 +278,20 @@ export default function MainLayout() {
             <i className="w-5 h-5 mr-3" data-lucide="help-circle"></i>
             <span className="text-sm font-medium">Help</span>
           </Link>
-          <Link className="flex items-center px-4 py-3 text-[#6B7280] hover:bg-gray-50 rounded-xl transition-colors" to="#">
-            <i className="w-5 h-5 mr-3" data-lucide="settings"></i>
-            <span className="text-sm font-medium">Settings</span>
-          </Link>
+          {isSettingsActive ? (
+            <div className="relative flex items-center">
+              <div className="sidebar-active-indicator"></div>
+              <Link className="flex items-center flex-1 px-4 py-3 bg-[#E0E8FF] text-[#2D1B4E] rounded-xl transition-colors ml-2" to={`/dashboard/notification-settings${location.search}`}>
+                <i className="w-5 h-5 mr-3 text-[#2D1B4E]" data-lucide="settings"></i>
+                <span className="text-sm font-bold">Settings</span>
+              </Link>
+            </div>
+          ) : (
+            <Link className="flex items-center px-4 py-3 text-[#6B7280] hover:bg-gray-50 rounded-xl transition-colors" to={`/dashboard/notification-settings${location.search}`}>
+              <i className="w-5 h-5 mr-3" data-lucide="settings"></i>
+              <span className="text-sm font-medium">Settings</span>
+            </Link>
+          )}
         </div>
       </aside>
       {/* END: LeftSidebar */}
@@ -137,20 +300,18 @@ export default function MainLayout() {
       <div className="flex-1 flex flex-col min-w-0">
 
         {/* BEGIN: MainHeader */}
-        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 z-10" data-purpose="top-header">
-  
+        <header className="relative h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 z-20" data-purpose="top-header">
+
           {/* Cụm Tìm kiếm & Menu 3 gạch mở rộng */}
           <div className="flex items-center flex-1 mr-8">
-            {/* Nút 3 gạch thu gọn/mở rộng Sidebar */}
-            <button 
+            <button
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
               className="p-2 mr-3 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
               title={isSidebarOpen ? "Thu gọn menu" : "Mở rộng menu"}
             >
               <i className="w-5 h-5" data-lucide="menu"></i>
             </button>
-            
-            {/* Thanh Tìm kiếm chiếm toàn bộ diện tích trống còn lại */}
+
             <div className="relative w-full">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <i className="h-4 w-4 text-gray-400" data-lucide="search"></i>
@@ -165,27 +326,47 @@ export default function MainLayout() {
 
           <div className="flex items-center space-x-6 flex-shrink-0">
             {/* Create Button */}
-            <button 
+            <button
               onClick={() => setShowCreateModal(true)}
-              className="bg-[#2D1B4E] text-white px-4 py-2 rounded-lg flex items-center text-sm font-semibold hover:bg-opacity-90 transition-all"
+              className="bg-[#2D1B4E] text-white px-4 py-2 rounded-lg flex items-center text-sm font-semibold hover:bg-opacity-90 transition-all font-['Inter']"
             >
               <i className="w-4 h-4 mr-2" data-lucide="plus"></i>
               Create
             </button>
 
-            {/* Notification Bell */}
-            <button className="relative text-gray-500 hover:text-gray-700">
-              <i className="w-6 h-6" data-lucide="bell"></i>
-            </button>
+            {/* Notification Bell Dropdown */}
+            <div className="relative" ref={bellRef}>
+              <button
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="relative text-gray-500 hover:text-gray-700 p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+                title="View notifications"
+              >
+                <i className="w-6 h-6" data-lucide="bell"></i>
+                {unreadCount > 0 && (
+                  <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-[#EF4444] rounded-full border-2 border-white"></span>
+                )}
+              </button>
+
+              {/* 🟢 ĐÂY CHÍNH LÀ NƠI HIỂN THỊ DANH SÁCH THÔNG BÁO TRÊN HEADER */}
+              {showNotifications && (
+                <div ref={dropdownRef} className="absolute right-0 z-50">
+                  <NotificationDropdown
+                    notifications={filteredNotifications}
+                    onMarkAllRead={handleMarkAllRead}
+                    onClose={() => setShowNotifications(false)}
+                  />
+                </div>
+              )}
+            </div>
 
             {/* User Profile */}
-            <div className="flex items-center space-x-3 border-l pl-6 border-gray-200">
+            <div className="flex items-center space-x-3 border-l pl-6 border-gray-200 font-['Inter']">
               <div className="w-10 h-10 rounded-full bg-purple-100 border border-[#2D1B4E] flex items-center justify-center overflow-hidden">
                 <div className="w-full h-full bg-gradient-to-tr from-purple-200 to-indigo-100 flex items-center justify-center">
-                  <span className="text-[#2D1B4E] text-xs font-bold">AM</span>
+                  <span className="text-[#2D1B4E] text-xs font-bold">{currentRole === 'ADMIN' ? 'AM' : 'TN'}</span>
                 </div>
               </div>
-              <span className="text-sm font-semibold text-gray-800">Alex Morgan</span>
+              <span className="text-sm font-semibold text-gray-800">{currentRole === 'ADMIN' ? 'Alex Morgan' : 'Trang Nguyễn'}</span>
             </div>
           </div>
         </header>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import '../../styles/CreateTaskModal.css';
 import RichTextEditor from '../tasks/RichTextEditor';
 
@@ -8,7 +8,7 @@ const CreateTaskModal = ({ isOpen, onClose, tasks = [] }) => {
     status: 'New',
     summary: '',
     description: '',
-    assignee: 'Alex Morgan', // Mặc định là user hiện tại hoặc Automatic
+    assignee: 'Unassigned',
     priority: 'Medium',
     createdAt: '',
     completed_at: '',
@@ -22,17 +22,39 @@ const CreateTaskModal = ({ isOpen, onClose, tasks = [] }) => {
   const [errors, setErrors] = useState({});
   const [isStatusOpen, setIsStatusOpen] = useState(false);
   const [isPriorityOpen, setIsPriorityOpen] = useState(false);
+  const [isAssigneeOpen, setIsAssigneeOpen] = useState(false);
   const [isCreatedAtOpen, setIsCreatedAtOpen] = useState(false);
   const [isCompletedAtOpen, setIsCompletedAtOpen] = useState(false);
   const [isUpdatedAtOpen, setIsUpdatedAtOpen] = useState(false);
   const [isSprintOpen, setIsSprintOpen] = useState(false);
   const [onlyShowCurrentSpace, setOnlyShowCurrentSpace] = useState(true);
+  const assigneeBtnRef = useRef(null);
+  const assigneeMenuRef = useRef(null);
+
+  const availableAssignees = [
+    { name: 'Pham Tien', initials: 'PT', color: '#2f3650', textColor: '#FFFFFF' },
+    { name: 'Hoang Hoa', initials: 'HH', color: '#F97316', textColor: '#FFFFFF' },
+    { name: 'Trong Nghia', initials: 'TN', color: '#14B8A6', textColor: '#FFFFFF' },
+    { name: 'Unassigned', initials: 'UN', color: '#8e8f90', textColor: '#FFFFFF', icon: 'person' }
+  ];
 
   useEffect(() => {
     if (isOpen && window.lucide) {
       window.lucide.createIcons();
     }
   }, [isOpen, isStatusOpen, isPriorityOpen, isCreatedAtOpen, isCompletedAtOpen, isUpdatedAtOpen, isSprintOpen, onlyShowCurrentSpace]);
+
+  useEffect(() => {
+    if (!isAssigneeOpen) return;
+    const handleClickOutside = (e) => {
+      if (assigneeMenuRef.current && !assigneeMenuRef.current.contains(e.target) &&
+          assigneeBtnRef.current && !assigneeBtnRef.current.contains(e.target)) {
+        setIsAssigneeOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isAssigneeOpen]);
 
   if (!isOpen) return null;
 
@@ -175,14 +197,59 @@ const CreateTaskModal = ({ isOpen, onClose, tasks = [] }) => {
           {/* Assignee */}
           <div className="form-group">
             <label>Assignee</label>
-            <div className="assignee-box">
-              <div className="avatar-placeholder">
-                <i data-lucide="user" className="w-4 h-4 text-gray-400"></i>
-              </div>
-              <select name="assignee" className="assignee-select" value={formData.assignee} onChange={handleInputChange}>
-                <option>Alex Morgan</option>
-                <option>Unassigned</option>
-              </select>
+            <div className="relative">
+              <button
+                ref={assigneeBtnRef}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsAssigneeOpen(prev => !prev);
+                }}
+                className="select-custom flex items-center gap-3 w-full bg-white text-left"
+              >
+                {(() => {
+                  const selectedProfile = availableAssignees.find(user => user.name === formData.assignee) || availableAssignees[0];
+                  return (
+                    <>
+                      <div
+                        className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold"
+                        style={{ backgroundColor: selectedProfile.color, color: selectedProfile.textColor || '#111' }}
+                      >
+                        {selectedProfile.initials || <span className="material-symbols-outlined">{selectedProfile.icon}</span>}
+                      </div>
+                      <span className="text-sm text-[#172B4D]">{formData.assignee}</span>
+                    </>
+                  );
+                })()}
+              </button>
+              {isAssigneeOpen && (
+                <div
+                  ref={assigneeMenuRef}
+                  className="absolute left-0 top-full z-50 mt-2 w-full rounded-[3px] border border-[#DFE1E6] bg-white shadow-2xl overflow-hidden"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {availableAssignees.map(user => (
+                    <button
+                      key={user.name}
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setFormData(prev => ({ ...prev, assignee: user.name }));
+                        setIsAssigneeOpen(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2 text-left text-[13px] hover:bg-[#EBF0FF] transition-colors"
+                    >
+                      <div
+                        className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold"
+                        style={{ backgroundColor: user.color, color: user.textColor || '#111' }}
+                      >
+                        {user.initials || <span className="material-symbols-outlined">{user.icon}</span>}
+                      </div>
+                      <span>{user.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 

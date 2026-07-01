@@ -17,6 +17,11 @@ import SpaceManagement from "./pages/SpaceManagement";
 import TaskManagement from "./pages/TaskManagement";
 import Dashboard from "./pages/Dashboard";
 import UserManagement from "./pages/UserManagement";
+import ProfilePage from "./pages/ProfilePage";
+
+// Import thêm 2 trang thông báo đúng theo cấu trúc thư mục của bạn
+import NotificationsPage from "./pages/NotificationsPage";
+import NotificationSettingsPage from "./pages/NotificationSettingsPage";
 
 export default function App() {
     return (
@@ -30,13 +35,23 @@ export default function App() {
                 <Route path="/verify-email" element={<VerifyEmail />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
 
-                {/* Dashboard */}
-                <Route path="/dashboard" element={<MainLayout />}>
+                {/* Dashboard - Thêm dấu /* vào path để React Router nhận diện chính xác các route con khi click */}
+                <Route path="/dashboard/*" element={<MainLayout />}>
                     <Route index element={<Dashboard />} />
                     <Route path="spaces" element={<SpaceManagement />} />
-                    <Route path="tasks/:spaceId" element={<TaskManagement />} />
-                    <Route path="users" element={<UserManagement />} />
+                    <Route path="tasks/:spaceId?" element={<TaskManagement />} />
+                    <Route path="tasks" element={<TaskManagement />} />
+
+                    {/* Nối link trang danh sách thông báo */}
+                    <Route path="notifications" element={<NotificationsPage />} />
+                    <Route path ="users" element={<UserManagement />} />
+                    <Route path="profile" element={<ProfilePage />} />
+                    {/* Nối link trang cài đặt thông báo (nếu cần dùng sau này) */}
+                    <Route path="notification-settings" element={<NotificationSettingsPage />} />
                 </Route>
+
+                {/* Dự phòng trường hợp user vào thẳng /dashboard không có dấu gạch chéo */}
+                <Route path="/dashboard" element={<Navigate to="/dashboard/" replace />} />
 
                 {/* Redirect */}
                 <Route path="*" element={<Navigate to="/" replace />} />
