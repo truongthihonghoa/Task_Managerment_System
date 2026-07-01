@@ -138,6 +138,7 @@ export default function MainLayout() {
   const isDashboardActive = location.pathname === '/dashboard' || location.pathname === '/dashboard/';
   const isTasksActive = location.pathname === '/dashboard/spaces' || location.pathname.includes('/dashboard/tasks');
   const isUsersActive = location.pathname === '/dashboard/users';
+  const isProfileActive = location.pathname === '/dashboard/profile';
   const isNotificationsActive = location.pathname === '/dashboard/notifications';
   const isSettingsActive = location.pathname === '/dashboard/notification-settings';
 
@@ -229,10 +230,20 @@ export default function MainLayout() {
           )}
 
           {/* Profile Item */}
-          <Link className="flex items-center px-4 py-3 text-[#6B7280] hover:bg-gray-50 rounded-xl transition-colors" to="#">
-            <i className="w-5 h-5 mr-3" data-lucide="user-circle"></i>
-            <span className="text-sm font-medium">Profile</span>
-          </Link>
+          {isProfileActive ? (
+            <div className="relative flex items-center">
+              <div className="sidebar-active-indicator"></div>
+              <Link className="flex items-center flex-1 px-4 py-3 bg-[#E0E8FF] text-[#2D1B4E] rounded-xl transition-colors ml-2" to={`/dashboard/profile${location.search}`}>
+                <i className="w-5 h-5 mr-3 text-[#2D1B4E]" data-lucide="user-circle"></i>
+                <span className="text-sm font-bold">Profile</span>
+              </Link>
+            </div>
+          ) : (
+            <Link className="flex items-center px-4 py-3 text-[#6B7280] hover:bg-gray-50 rounded-xl transition-colors" to={`/dashboard/profile${location.search}`}>
+              <i className="w-5 h-5 mr-3" data-lucide="user-circle"></i>
+              <span className="text-sm font-medium">Profile</span>
+            </Link>
+          )}
  
           {/* Notifications Item */}
           {isNotificationsActive ? (

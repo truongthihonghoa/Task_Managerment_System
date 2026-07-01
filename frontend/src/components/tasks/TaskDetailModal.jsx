@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import '../../styles/CreateTaskModal.css';
 import RichTextEditor from './RichTextEditor';
 
-export default function TaskDetailModal({ task, onClose, tasks = [], onUpdateTask }) {
+
+ export default function TaskDetailModal({ task, onClose, tasks = [], onUpdateTask }) {
   const [activeTab, setActiveTab] = useState('comments');
   const [commentText, setCommentText] = useState('');
   const [isStatusOpen, setIsStatusOpen] = useState(false);
@@ -13,8 +14,29 @@ export default function TaskDetailModal({ task, onClose, tasks = [], onUpdateTas
   const [localTask, setLocalTask] = useState(task || {});
   const [isDescriptionEditing, setIsDescriptionEditing] = useState(false);
   const [tempDescription, setTempDescription] = useState(task?.description || '');
+  const [pendingDescriptionAttachments, setPendingDescriptionAttachments] = useState([]);
+  const [previewAttachment, setPreviewAttachment] = useState(null);
+  const [previewZoom, setPreviewZoom] = useState(1);
+  const [baseMax, setBaseMax] = useState({ w: Math.max(600, window.innerWidth * 0.7), h: Math.max(400, window.innerHeight * 0.7) });
+  const [naturalSize, setNaturalSize] = useState({ w: 0, h: 0 });
+  const [baseWidth, setBaseWidth] = useState(null);
+  const previewImgRef = React.useRef(null);
   const [isCommentEditing, setIsCommentEditing] = useState(false);
   const [tempComment, setTempComment] = useState('');
+  const [replyToCommentId, setReplyToCommentId] = useState(null);
+  const [editCommentId, setEditCommentId] = useState(null);
+  const [deleteConfirmCommentId, setDeleteConfirmCommentId] = useState(null);
+  const [isUploadAreaOpen, setIsUploadAreaOpen] = useState(false);
+  const [attachments, setAttachments] = useState(task?.attachments || []);
+  const [comments, setComments] = useState(task?.comments || [
+    {
+      id: 1,
+      author: 'Peter Tan',
+      date: 'Jun 22, 2026',
+      text: 'Can we get more info on the validation rules for the email field?',
+      parentId: null
+    }
+  ]);
   const [isTitleEditing, setIsTitleEditing] = useState(false);
   const [tempTitle, setTempTitle] = useState(task?.title || '');
   const [isAssigneeOpen, setIsAssigneeOpen] = useState(false);
@@ -33,10 +55,138 @@ export default function TaskDetailModal({ task, onClose, tasks = [], onUpdateTas
     name: 'Trang Nguyen'
   };
 
+
   const [completedMonth, setCompletedMonth] = useState(5);
   const [completedYear, setCompletedYear] = useState(2026);
   const [createdMonth, setCreatedMonth] = useState(5);
   const [createdYear, setCreatedYear] = useState(2026);
+  const uploadInputRef = useRef(null);
+  const replaceInputRef = useRef(null);
+  const [replaceTargetId, setReplaceTargetId] = useState(null);
+
+  const formatFileSize = (bytes) => {
+    if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    if (bytes >= 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${bytes} B`;
+  };
+
+  const createAttachmentFromFile = (file, index = 0) => {
+    const isImage = file.type.startsWith('image/');
+    return {
+      id: Date.now() + index,
+      name: file.name,
+      size: formatFileSize(file.size),
+      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      icon: file.name.endsWith('.zip') ? 'folder_zip' : file.name.endsWith('.pdf') ? 'picture_as_pdf' : isImage ? 'image' : 'upload_file',
+      color: file.name.endsWith('.zip') ? '#4C2B74' : file.name.endsWith('.pdf') ? '#DE350B' : '#4C2B74',
+      bg: file.name.endsWith('.zip') ? '#EBF5FF' : file.name.endsWith('.pdf') ? '#FFF5F5' : '#EEF3FF',
+      type: isImage ? 'image' : 'file',
+      previewUrl: isImage ? URL.createObjectURL(file) : null
+    };
+  };
+
+  const syncTask = (updates) => {
+    setLocalTask(prev => {
+      const next = { ...prev, ...updates };
+      if (onUpdateTask) onUpdateTask(next);
+      return next;
+    });
+  };
+
+  const addAttachments = (newAttachments, options = { persistImmediately: true }) => {
+    setAttachments(prev => {
+      const next = [...prev, ...newAttachments];
+      if (options.persistImmediately) {
+        setLocalTask(prevTask => ({ ...prevTask, attachments: next }));
+        syncTask({ attachments: next });
+      }
+      return next;
+    });
+  };
+
+  const triggerReplace = (id) => {
+    setReplaceTargetId(id);
+    replaceInputRef.current?.click();
+  };
+
+  const handleReplaceFile = (e) => {
+    const file = e.target.files?.[0];
+    if (!file || replaceTargetId == null) return;
+    const newAtt = createAttachmentFromFile(file);
+    setAttachments(prev => {
+      const next = prev.map(a => a.id === replaceTargetId ? { ...a, name: newAtt.name, size: newAtt.size, date: newAtt.date, icon: newAtt.icon, color: newAtt.color, bg: newAtt.bg, type: newAtt.type, previewUrl: newAtt.previewUrl } : a);
+      setLocalTask(prevTask => ({ ...prevTask, attachments: next }));
+      syncTask({ attachments: next });
+      return next;
+    });
+    setReplaceTargetId(null);
+    e.target.value = '';
+  };
+
+  const deleteAttachment = (id) => {
+    setAttachments(prev => {
+      const toDelete = prev.find(a => a.id === id);
+      if (toDelete && toDelete.previewUrl) {
+        try { URL.revokeObjectURL(toDelete.previewUrl); } catch(_){}
+      }
+      const next = prev.filter(a => a.id !== id);
+      // only remove from attachments list; do not alter description or comments
+      setLocalTask(prevTask => {
+        const updated = { ...prevTask, attachments: next };
+        if (onUpdateTask) onUpdateTask(updated);
+        return updated;
+      });
+      syncTask({ attachments: next });
+      return next;
+    });
+  };
+
+  const downloadAttachment = (att, e) => {
+    e?.stopPropagation();
+    if (!att) return;
+    // If previewUrl exists (client-side file), trigger download
+    if (att.previewUrl) {
+      try {
+        const a = document.createElement('a');
+        a.href = att.previewUrl;
+        a.download = att.name || 'download';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      } catch (err) {
+        // fallback: open in new tab
+        window.open(att.previewUrl, '_blank');
+      }
+    } else {
+      // No client preview URL available — attempt to open file URL if present
+      if (att.url) window.open(att.url, '_blank');
+    }
+  };
+
+  const handleFileUpload = (event) => {
+    const files = Array.from(event.target.files || []);
+    if (!files.length) return;
+
+    addAttachments(files.map((file, index) => createAttachmentFromFile(file, index)));
+    setIsUploadAreaOpen(false);
+    event.target.value = '';
+  };
+
+  const handleFileUploadObject = (file) => {
+    if (!file) return;
+    const attachment = createAttachmentFromFile(file);
+    if (isDescriptionEditing) {
+      setPendingDescriptionAttachments(prev => [...prev, attachment]);
+    } else {
+      addAttachments([attachment]);
+    }
+  };
+
+  const openUploadDialog = () => {
+    setIsUploadAreaOpen(true);
+    uploadInputRef.current?.click();
+  };
+
 
   const getDaysInMonth = (year, month) => {
     const days = [];
@@ -47,8 +197,10 @@ export default function TaskDetailModal({ task, onClose, tasks = [], onUpdateTas
     return days;
   };
 
+
   const monthAbbrs = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
 
   useEffect(() => {
     if (task) {
@@ -56,8 +208,22 @@ export default function TaskDetailModal({ task, onClose, tasks = [], onUpdateTas
       setAssignHistory(sortAssignHistory(task.assignmentHistory || []));
       setTempDescription(task.description || '');
       setTempTitle(task.title || '');
+      setComments(task.comments || [
+        {
+          id: 1,
+          author: 'Peter Tan',
+          date: 'Jun 22, 2026',
+          text: 'Can we get more info on the validation rules for the email field?',
+          parentId: null
+        }
+      ]);
+      setAttachments(task.attachments || []);
+      setPendingDescriptionAttachments([]);
+      setReplyToCommentId(null);
+      setEditCommentId(null);
       setIsDescriptionEditing(false);
       setIsTitleEditing(false);
+
 
       if (task.date) {
         const d = new Date(task.date);
@@ -76,6 +242,19 @@ export default function TaskDetailModal({ task, onClose, tasks = [], onUpdateTas
     }
   }, [task]);
 
+  // Update baseMax on resize so image fits the viewport nicely
+  useEffect(() => {
+    const update = () => {
+      const w = Math.max(600, window.innerWidth * 0.7);
+      const h = Math.max(400, window.innerHeight * 0.7);
+      setBaseMax({ w, h });
+    };
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
+
+
   // Handle escape key to close
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -85,7 +264,9 @@ export default function TaskDetailModal({ task, onClose, tasks = [], onUpdateTas
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
+
   if (!task) return null;
+
 
   // Get initials from name
   const getInitials = (name) => {
@@ -94,6 +275,153 @@ export default function TaskDetailModal({ task, onClose, tasks = [], onUpdateTas
     if (parts.length === 0) return 'UN';
     return parts.map(n => n ? n[0] : '').join('').toUpperCase().substring(0, 2);
   };
+   
+  const getReplies = (parentId) => comments.filter(comment => comment.parentId === parentId);
+
+
+  const renderComment = (comment, level = 0) => (
+    <div key={comment.id} className="flex flex-col gap-3 relative" style={{ paddingLeft: `${level * 36}px` }}>
+      <div className="flex gap-3">
+        <div
+          className="shrink-0 flex items-center justify-center"
+          style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#DFE1E6', fontSize: '11px', fontWeight: 700, color: '#42526E' }}
+        >
+          {comment.author.split(' ').map(n => n ? n[0] : '').join('').toUpperCase().substring(0, 2)}
+        </div>
+        <div className="flex-1">
+          <div className="flex items-center gap-2" style={{ marginBottom: '4px' }}>
+            <span style={{ fontSize: '13px', fontWeight: 700, color: '#172B4D' }}>{comment.author}</span>
+            <span style={{ fontSize: '11px', color: '#6B778C' }}>{comment.date}</span>
+          </div>
+          <p style={{ fontSize: '13px', color: '#172B4D', lineHeight: '1.5' }} dangerouslySetInnerHTML={{ __html: comment.text }} />
+          <div className="flex gap-4" style={{ marginTop: '6px' }}>
+            <button
+              style={{ fontSize: '11px', fontWeight: 500, color: '#6B778C', background: 'none', border: 'none', cursor: 'pointer' }}
+              className="hover:text-[#4C2B74]"
+              onClick={() => {
+                setReplyToCommentId(comment.id);
+                setTempComment(`@${comment.author} `);
+                setIsCommentEditing(true);
+              }}
+            >
+              Reply
+            </button>
+            <button
+              style={{ fontSize: '11px', fontWeight: 500, color: '#6B778C', background: 'none', border: 'none', cursor: 'pointer' }}
+              className="hover:text-[#4C2B74]"
+              onClick={() => {
+                setTempComment(comment.text);
+                setReplyToCommentId(null);
+                setEditCommentId(comment.id);
+                setIsCommentEditing(true);
+              }}
+            >
+              Edit
+            </button>
+            <button
+              style={{ fontSize: '11px', fontWeight: 500, color: '#DE350B', background: 'none', border: 'none', cursor: 'pointer' }}
+              className="hover:text-[#B91C1C]"
+              onClick={() => setDeleteConfirmCommentId(comment.id)}
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+      {replyToCommentId === comment.id && (
+        <div className="flex flex-col gap-3" style={{ paddingLeft: '36px' }}>
+          <div style={{ fontSize: '12px', color: '#42526E' }}>Replying to {comment.author}</div>
+          <RichTextEditor
+            value={tempComment}
+            onChange={(val) => setTempComment(val)}
+            placeholder="Add a reply..."
+            tasks={tasks}
+            onUploadFile={handleFileUploadObject}
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                if (tempComment.trim()) {
+                  setComments(prev => [
+                    {
+                      id: Date.now(),
+                      author: 'You',
+                      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+                      text: tempComment,
+                      parentId: comment.id
+                    },
+                    ...prev
+                  ]);
+                }
+                setIsCommentEditing(false);
+                setTempComment('');
+                setReplyToCommentId(null);
+              }}
+              style={{ padding: '6px 16px', backgroundColor: '#4C2B74', color: '#fff', border: 'none', borderRadius: '3px', fontSize: '14px', fontWeight: 500, cursor: 'pointer' }}
+              className="hover:opacity-90 active:scale-[0.97] transition-all"
+            >
+              Comment
+            </button>
+            <button
+              onClick={() => {
+                setIsCommentEditing(false);
+                setTempComment('');
+                setReplyToCommentId(null);
+              }}
+              style={{ padding: '6px 16px', background: 'none', border: 'none', borderRadius: '3px', fontSize: '14px', fontWeight: 500, color: '#42526E', cursor: 'pointer' }}
+              className="hover:bg-[#EBECF0] transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+      {editCommentId === comment.id && (
+        <div className="flex flex-col gap-3" style={{ paddingLeft: '36px' }}>
+          <div style={{ fontSize: '12px', color: '#42526E' }}>Editing comment</div>
+          <RichTextEditor
+            value={tempComment}
+            onChange={(val) => setTempComment(val)}
+            placeholder="Edit comment..."
+            tasks={tasks}
+            onUploadFile={handleFileUploadObject}
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                if (tempComment.trim()) {
+                  setComments(prev => {
+                    const next = prev.map(c => c.id === comment.id ? { ...c, text: tempComment } : c);
+                    syncTask({ comments: next });
+                    return next;
+                  });
+                }
+                setIsCommentEditing(false);
+                setTempComment('');
+                setEditCommentId(null);
+              }}
+              style={{ padding: '6px 16px', backgroundColor: '#4C2B74', color: '#fff', border: 'none', borderRadius: '3px', fontSize: '14px', fontWeight: 500, cursor: 'pointer' }}
+              className="hover:opacity-90 active:scale-[0.97] transition-all"
+            >
+              Comment
+            </button>
+            <button
+              onClick={() => {
+                setIsCommentEditing(false);
+                setTempComment('');
+                setEditCommentId(null);
+              }}
+              style={{ padding: '6px 16px', background: 'none', border: 'none', borderRadius: '3px', fontSize: '14px', fontWeight: 500, color: '#42526E', cursor: 'pointer' }}
+              className="hover:bg-[#EBECF0] transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+      {getReplies(comment.id).map(reply => renderComment(reply, level + 1))}
+    </div>
+  );
 
   const assigneeProfiles = {
     'Pham Tien': { initials: 'PT', color: '#2f3650', textColor: '#FFFFFF' },
@@ -239,20 +567,17 @@ export default function TaskDetailModal({ task, onClose, tasks = [], onUpdateTas
             </span>
           </div>
           <div className="flex items-center gap-1">
-            <button className="flex items-center justify-center p-1.5 rounded hover:bg-[#EBECF0] transition-colors">
-              <span className="material-symbols-outlined" style={{ fontSize: '18px', color: '#42526E' }}>share</span>
-            </button>
-            <button className="flex items-center justify-center p-1.5 rounded hover:bg-[#EBECF0] transition-colors">
-              <span className="material-symbols-outlined" style={{ fontSize: '18px', color: '#42526E' }}>more_horiz</span>
-            </button>
+            {/* share and more icons removed per UX request */}
             <button className="flex items-center justify-center p-1.5 rounded hover:bg-[#EBECF0] transition-colors" onClick={onClose} title="Close">
               <span className="material-symbols-outlined" style={{ fontSize: '18px', color: '#42526E' }}>close</span>
             </button>
           </div>
         </div>
 
+
         {/* ─── Body ─── */}
         <div className="flex flex-1 overflow-hidden">
+
 
           {/* ── Left: Main Details ── */}
           <main
@@ -304,16 +629,19 @@ export default function TaskDetailModal({ task, onClose, tasks = [], onUpdateTas
               </div>
             )}
 
+
             {/* Action Buttons */}
             <div className="flex gap-2" style={{ marginBottom: '28px' }}>
               {/* Attach button removed as requested */}
             </div>
+
 
             {/* Description */}
             <div style={{ marginBottom: '28px' }}>
               <h3 style={{ fontSize: '11px', fontWeight: 600, color: '#5E6C84', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                 Description
               </h3>
+             
 
               {!isDescriptionEditing ? (
                 <div
@@ -340,11 +668,16 @@ export default function TaskDetailModal({ task, onClose, tasks = [], onUpdateTas
                     onChange={(val) => setTempDescription(val)}
                     placeholder="Describe this task..."
                     tasks={tasks}
+                    onUploadFile={handleFileUploadObject}
                   />
                   <div className="flex gap-2">
                     <button
                       onClick={() => {
-                        setLocalTask(prev => ({ ...prev, description: tempDescription }));
+                        const combinedAttachments = [...attachments, ...pendingDescriptionAttachments];
+                        setLocalTask(prev => ({ ...prev, description: tempDescription, attachments: combinedAttachments }));
+                        syncTask({ description: tempDescription, attachments: combinedAttachments });
+                        setAttachments(combinedAttachments);
+                        setPendingDescriptionAttachments([]);
                         setIsDescriptionEditing(false);
                       }}
                       style={{ padding: '6px 12px', backgroundColor: '#4C2B74', color: '#fff', border: 'none', borderRadius: '3px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
@@ -367,43 +700,186 @@ export default function TaskDetailModal({ task, onClose, tasks = [], onUpdateTas
               )}
             </div>
 
+
             {/* Attachments */}
             <div style={{ marginBottom: '28px' }}>
-              <h3 style={{ fontSize: '11px', fontWeight: 600, color: '#5E6C84', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                Attachments (2)
-              </h3>
+              <div className="flex items-center justify-between" style={{ marginBottom: '12px' }}>
+                <h3 style={{ fontSize: '11px', fontWeight: 600, color: '#5E6C84', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  Attachments ({attachments.length})
+                </h3>
+                <button
+                  onClick={openUploadDialog}
+                  style={{ fontSize: '12px', fontWeight: 600, color: '#4C2B74', background: 'none', border: 'none', cursor: 'pointer' }}
+                  className="hover:text-[#2E1C54] transition-colors"
+                >
+                  Upload file
+                </button>
+                <input
+                  type="file"
+                  ref={uploadInputRef}
+                  onChange={handleFileUpload}
+                  style={{ display: 'none' }}
+                  multiple
+                />
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* Attachment 1 */}
+                {attachments.map((file) => (
+                  <div
+                    key={file.id}
+                    className="flex items-center gap-3 group cursor-pointer hover:bg-[#F4F5F7] transition-colors"
+                    style={{ padding: '10px 14px', border: '1px solid #DFE1E6', borderRadius: '6px' }}
+                    onClick={() => {
+                      if (file.type === 'image' && file.previewUrl) {
+                        setPreviewAttachment(file);
+                      }
+                    }}
+                  >
+                    {file.type === 'image' && file.previewUrl ? (
+                      <img
+                        src={file.previewUrl}
+                        alt={file.name}
+                        style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '6px', border: '1px solid #DFE1E6' }}
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center shrink-0" style={{ width: '40px', height: '40px', backgroundColor: file.bg, borderRadius: '6px' }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '22px', color: file.color }}>{file.icon}</span>
+                      </div>
+                    )}
+                    <div className="flex flex-col flex-1 overflow-hidden">
+                      <span className="truncate" style={{ fontSize: '13px', fontWeight: 600, color: '#172B4D' }}>{file.name}</span>
+                      <span style={{ fontSize: '11px', color: '#6B778C' }}>{file.size} • {file.date}</span>
+                    </div>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); triggerReplace(file.id); }}
+                        title="Replace"
+                        style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#6B778C', padding: 6, borderRadius: 6 }}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: 18 }}>edit</span>
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); deleteAttachment(file.id); }}
+                        title="Delete"
+                        style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#DE350B', padding: 6, borderRadius: 6 }}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <span className="material-symbols-outlined">delete</span>
+                      </button>
+                      {file.previewUrl ? (
+                        <button
+                          onClick={(e) => downloadAttachment(file, e)}
+                          title="Download"
+                          style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#42526E', padding: 6, borderRadius: 6 }}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: 18 }}>download</span>
+                        </button>
+                      ) : (
+                        <span className="material-symbols-outlined opacity-0 group-hover:opacity-100 transition-opacity" style={{ fontSize: '18px', color: '#42526E' }}>download</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                <input type="file" ref={replaceInputRef} onChange={handleReplaceFile} style={{ display: 'none' }} />
+              </div>
+              {isUploadAreaOpen && (
                 <div
-                  className="flex items-center gap-3 group cursor-pointer hover:bg-[#F4F5F7] transition-colors"
-                  style={{ padding: '10px 14px', border: '1px solid #DFE1E6', borderRadius: '6px' }}
+                  className="mt-4 p-5 rounded-2xl border border-dashed border-[#DFE1E6] bg-[#FAFBFC]"
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', cursor: 'pointer' }}
+                  onClick={openUploadDialog}
                 >
-                  <div className="flex items-center justify-center shrink-0" style={{ width: '40px', height: '40px', backgroundColor: '#FFF5F5', borderRadius: '6px' }}>
-                    <span className="material-symbols-outlined" style={{ fontSize: '22px', color: '#DE350B' }}>picture_as_pdf</span>
+                  <div
+                    className="flex items-center justify-center"
+                    style={{ width: '56px', height: '56px', borderRadius: '16px', backgroundColor: '#F4F7FA' }}
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: '32px', color: '#4C2B74' }}>cloud_upload</span>
                   </div>
-                  <div className="flex flex-col flex-1 overflow-hidden">
-                    <span className="truncate" style={{ fontSize: '13px', fontWeight: 600, color: '#172B4D' }}>user-flow.pdf</span>
-                    <span style={{ fontSize: '11px', color: '#6B778C' }}>2.4 MB • {task.date || 'Jun 20, 2026'}</span>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '14px', fontWeight: 700, color: '#172B4D' }}>Click to upload or drag and drop</div>
+                    <div style={{ fontSize: '12px', color: '#6B778C', marginTop: '4px' }}>PDF, ZIP, PNG, or JPG up to 20MB</div>
                   </div>
-                  <span className="material-symbols-outlined opacity-0 group-hover:opacity-100 transition-opacity" style={{ fontSize: '18px', color: '#42526E' }}>download</span>
                 </div>
+              )}
+            </div>
 
-                {/* Attachment 2 */}
+            {previewAttachment && (
+              <div
+                className="fixed inset-0 z-[11000] flex items-center justify-center bg-black/70"
+                onClick={() => {
+                  setPreviewAttachment(null);
+                  setPreviewZoom(1);
+                }}
+              >
                 <div
-                  className="flex items-center gap-3 group cursor-pointer hover:bg-[#F4F5F7] transition-colors"
-                  style={{ padding: '10px 14px', border: '1px solid #DFE1E6', borderRadius: '6px' }}
+                  className="bg-white rounded-2xl p-2"
+                  style={{ position: 'relative', width: '75vw', height: '80vh', padding: 12, overflow: 'hidden' }}
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  <div className="flex items-center justify-center shrink-0" style={{ width: '40px', height: '40px', backgroundColor: '#EBF5FF', borderRadius: '6px' }}>
-                    <span className="material-symbols-outlined" style={{ fontSize: '22px', color: '#4C2B74' }}>folder_zip</span>
+                  <div style={{ position: 'absolute', top: 16, right: 16, display: 'flex', gap: '8px', zIndex: 20 }}>
+                    <button
+                      onClick={() => setPreviewZoom(prev => Math.max(0.5, prev - 0.25))}
+                      style={{ border: '1px solid #DFE1E6', background: '#fff', borderRadius: '6px', width: '34px', height: '34px', fontSize: '18px', color: '#4C2B74', cursor: 'pointer' }}
+                      title="Zoom out"
+                    >
+                      −
+                    </button>
+                    <button
+                      onClick={() => setPreviewZoom(prev => Math.min(2, prev + 0.25))}
+                      style={{ border: '1px solid #DFE1E6', background: '#fff', borderRadius: '6px', width: '34px', height: '34px', fontSize: '18px', color: '#4C2B74', cursor: 'pointer' }}
+                      title="Zoom in"
+                    >
+                      +
+                    </button>
+                    <button
+                      onClick={() => {
+                        setPreviewAttachment(null);
+                        setPreviewZoom(1);
+                      }}
+                      style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#4C2B74', fontSize: '24px', lineHeight: '1' }}
+                      title="Close"
+                    >
+                      ×
+                    </button>
                   </div>
-                  <div className="flex flex-col flex-1 overflow-hidden">
-                    <span className="truncate" style={{ fontSize: '13px', fontWeight: 600, color: '#172B4D' }}>wireframes.zip</span>
-                    <span style={{ fontSize: '11px', color: '#6B778C' }}>15.8 MB • {task.date || 'Jun 21, 2026'}</span>
+                  <div className="flex items-center justify-between mb-3" style={{ gap: '12px', minWidth: '300px' }}>
+                    <div>
+                      <div style={{ fontSize: '14px', fontWeight: 700, color: '#172B4D' }}>{previewAttachment.name}</div>
+                      <div style={{ fontSize: '12px', color: '#6B778C' }}>{previewAttachment.size}</div>
+                    </div>
                   </div>
-                  <span className="material-symbols-outlined opacity-0 group-hover:opacity-100 transition-opacity" style={{ fontSize: '18px', color: '#42526E' }}>download</span>
+                  <div style={{ textAlign: 'center', overflow: 'auto', height: 'calc(80vh - 80px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ display: 'inline-block' }}>
+                      <img
+                        ref={previewImgRef}
+                        src={previewAttachment.previewUrl}
+                        alt={previewAttachment.name}
+                        onLoad={(e) => {
+                          const iw = e.target.naturalWidth || e.target.width;
+                          const ih = e.target.naturalHeight || e.target.height;
+                          setNaturalSize({ w: iw, h: ih });
+                          // compute fit scale to baseMax
+                          const fitScale = Math.min(1, baseMax.w / iw, baseMax.h / ih);
+                          const bw = Math.round(iw * fitScale);
+                          setBaseWidth(bw);
+                          // reset zoom to 1 when loading new image
+                          setPreviewZoom(1);
+                        }}
+                        style={{
+                          width: baseWidth ? `${Math.max(40, Math.min(baseWidth * previewZoom, baseMax.w * 4))}px` : 'auto',
+                          height: 'auto',
+                          maxWidth: 'none',
+                          maxHeight: 'none',
+                          borderRadius: '6px',
+                          display: 'block'
+                        }}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
+
 
             {/* ── Activity Tabs ── */}
             <div>
@@ -442,88 +918,92 @@ export default function TaskDetailModal({ task, onClose, tasks = [], onUpdateTas
                 </button>
               </div>
 
+
               {/* Comments View */}
               {activeTab === 'comments' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                  {/* Existing Comment */}
-                  <div className="flex gap-3">
-                    <div
-                      className="shrink-0 flex items-center justify-center"
-                      style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#DFE1E6', fontSize: '11px', fontWeight: 700, color: '#42526E' }}
-                    >
-                      PT
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2" style={{ marginBottom: '4px' }}>
-                        <span style={{ fontSize: '13px', fontWeight: 700, color: '#172B4D' }}>Peter Tan</span>
-                        <span style={{ fontSize: '11px', color: '#6B778C' }}>Jun 22, 2026</span>
-                      </div>
-                      <p style={{ fontSize: '13px', color: '#172B4D', lineHeight: '1.5' }}>
-                        Can we get more info on the validation rules for the email field?
-                      </p>
-                      <div className="flex gap-4" style={{ marginTop: '6px' }}>
-                        <button style={{ fontSize: '11px', fontWeight: 500, color: '#6B778C', background: 'none', border: 'none', cursor: 'pointer' }} className="hover:text-[#4C2B74]">Reply</button>
-                        <button style={{ fontSize: '11px', fontWeight: 500, color: '#6B778C', background: 'none', border: 'none', cursor: 'pointer' }} className="hover:text-[#4C2B74]">Edit</button>
-                      </div>
-                    </div>
-                  </div>
-
                   {/* Comment Editor */}
-                  <div className="flex flex-col gap-3" style={{ paddingTop: '8px' }}>
-                    {!isCommentEditing ? (
-                      <div
-                        className="flex-1 cursor-text hover:bg-[#F4F5F7] transition-colors"
-                        style={{
-                          padding: '10px 14px',
-                          border: '2px solid #DFE1E6',
-                          borderRadius: '3px',
-                          fontSize: '13px',
-                          color: '#6B778C',
-                          backgroundColor: '#FAFBFC',
-                          minHeight: '40px',
-                          display: 'flex',
-                          alignItems: 'center'
-                        }}
-                        onClick={() => setIsCommentEditing(true)}
-                      >
-                        Add a comment...
-                      </div>
-                    ) : (
-                      <div className="flex flex-col gap-3">
-                        <RichTextEditor
-                          value={tempComment}
-                          onChange={(val) => setTempComment(val)}
-                          placeholder="Add a comment..."
-                          tasks={tasks}
-                        />
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => {
-                              // Logic to save comment would go here
-                              setIsCommentEditing(false);
-                              setTempComment('');
-                            }}
-                            style={{ padding: '6px 16px', backgroundColor: '#4C2B74', color: '#fff', border: 'none', borderRadius: '3px', fontSize: '14px', fontWeight: 500, cursor: 'pointer' }}
-                            className="hover:opacity-90 active:scale-[0.97] transition-all"
-                          >
-                            Save
-                          </button>
-                          <button
-                            onClick={() => {
-                              setIsCommentEditing(false);
-                              setTempComment('');
-                            }}
-                            style={{ padding: '6px 16px', background: 'none', border: 'none', borderRadius: '3px', fontSize: '14px', fontWeight: 500, color: '#42526E', cursor: 'pointer' }}
-                            className="hover:bg-[#EBECF0] transition-colors"
-                          >
-                            Cancel
-                          </button>
+                  {!replyToCommentId && !editCommentId && (
+                    <div className="flex flex-col gap-3" style={{ paddingTop: '8px' }}>
+                      {!isCommentEditing ? (
+                        <div
+                          className="flex-1 cursor-text hover:bg-[#F4F5F7] transition-colors"
+                          style={{
+                            padding: '10px 14px',
+                            border: '2px solid #DFE1E6',
+                            borderRadius: '3px',
+                            fontSize: '13px',
+                            color: '#6B778C',
+                            backgroundColor: '#FAFBFC',
+                            minHeight: '40px',
+                            display: 'flex',
+                            alignItems: 'center'
+                          }}
+                          onClick={() => {
+                            setIsCommentEditing(true);
+                            setReplyToCommentId(null);
+                          }}
+                        >
+                          Add a comment...
                         </div>
-                      </div>
-                    )}
+                      ) : (
+                        <div className="flex flex-col gap-3">
+                          <RichTextEditor
+                            value={tempComment}
+                            onChange={(val) => setTempComment(val)}
+                            placeholder="Add a comment..."
+                            tasks={tasks}
+                            onUploadFile={handleFileUploadObject}
+                          />
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => {
+                                if (tempComment.trim()) {
+                                  setComments(prev => [
+                                    {
+                                      id: Date.now(),
+                                      author: 'You',
+                                      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+                                      text: tempComment,
+                                      parentId: null
+                                    },
+                                    ...prev
+                                  ]);
+                                }
+                                setIsCommentEditing(false);
+                                setTempComment('');
+                                setReplyToCommentId(null);
+                              }}
+                              style={{ padding: '6px 16px', backgroundColor: '#4C2B74', color: '#fff', border: 'none', borderRadius: '3px', fontSize: '14px', fontWeight: 500, cursor: 'pointer' }}
+                              className="hover:opacity-90 active:scale-[0.97] transition-all"
+                            >
+                              Comment
+                            </button>
+                            <button
+                              onClick={() => {
+                                setIsCommentEditing(false);
+                                setTempComment('');
+                                setReplyToCommentId(null);
+                              }}
+                              style={{ padding: '6px 16px', background: 'none', border: 'none', borderRadius: '3px', fontSize: '14px', fontWeight: 500, color: '#42526E', cursor: 'pointer' }}
+                              className="hover:bg-[#EBECF0] transition-colors"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+
+                  {/* Existing Comments */}
+                  <div className="flex flex-col gap-4">
+                    {comments.filter(comment => comment.parentId === null).map(comment => renderComment(comment))}
                   </div>
                 </div>
               )}
+
 
               {/* History View */}
               {activeTab === 'history' && (
@@ -583,6 +1063,7 @@ export default function TaskDetailModal({ task, onClose, tasks = [], onUpdateTas
             </div>
           </main>
 
+
           {/* ── Right Sidebar ── */}
           <aside
             className="overflow-y-auto custom-scrollbar shrink-0"
@@ -593,7 +1074,9 @@ export default function TaskDetailModal({ task, onClose, tasks = [], onUpdateTas
               Task Detail
             </h2>
 
+
             <div style={{ backgroundColor: '#fff', border: '1px solid #DFE1E6', borderRadius: '6px', padding: '20px' }}>
+
 
               {/* ── Assignee ── */}
               <div style={{ marginBottom: '20px' }}>
@@ -647,6 +1130,7 @@ export default function TaskDetailModal({ task, onClose, tasks = [], onUpdateTas
                 </div>
               </div>
 
+
               {/* ── Status ── */}
               <div style={{ marginBottom: '20px' }}>
                 <label style={{ fontSize: '11px', fontWeight: 600, color: '#5E6C84', display: 'block', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
@@ -667,6 +1151,7 @@ export default function TaskDetailModal({ task, onClose, tasks = [], onUpdateTas
                     </span>
                     <span className="material-symbols-outlined" style={{ fontSize: '16px', color: '#6B778C' }}>expand_more</span>
                   </div>
+
 
                   {isStatusOpen && (
                     <div className="status-custom-dropdown" style={{ left: 0, width: '100%' }}>
@@ -693,6 +1178,7 @@ export default function TaskDetailModal({ task, onClose, tasks = [], onUpdateTas
                 </div>
               </div>
 
+
               {/* ── Priority ── */}
               <div style={{ marginBottom: '20px' }}>
                 <label style={{ fontSize: '11px', fontWeight: 600, color: '#5E6C84', display: 'block', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
@@ -716,6 +1202,7 @@ export default function TaskDetailModal({ task, onClose, tasks = [], onUpdateTas
                     </div>
                     <span className="material-symbols-outlined" style={{ fontSize: '16px', color: '#6B778C' }}>expand_more</span>
                   </div>
+
 
                   {isPriorityOpen && (
                     <div className="priority-custom-dropdown" style={{ left: 0, width: '100%' }}>
@@ -741,8 +1228,10 @@ export default function TaskDetailModal({ task, onClose, tasks = [], onUpdateTas
                 </div>
               </div>
 
+
               {/* Divider */}
               <div style={{ height: '1px', backgroundColor: '#EBECF0', margin: '4px 0 20px' }}></div>
+
 
               {/* ── Story Points ── */}
               <div className="flex justify-between items-center group cursor-pointer" style={{ marginBottom: '16px' }}>
@@ -767,8 +1256,8 @@ export default function TaskDetailModal({ task, onClose, tasks = [], onUpdateTas
                     }}
                   />
                   <style>{`
-                    .story-points-input::-webkit-inner-spin-button, 
-                    .story-points-input::-webkit-outer-spin-button { 
+                    .story-points-input::-webkit-inner-spin-button,
+                    .story-points-input::-webkit-outer-spin-button {
                       opacity: 1;
                     }
                     .story-points-input:focus {
@@ -780,6 +1269,7 @@ export default function TaskDetailModal({ task, onClose, tasks = [], onUpdateTas
                 </div>
               </div>
 
+
               {/* ── Sprint ── */}
               <div className="flex justify-between items-center" style={{ marginBottom: '16px' }}>
                 <span style={{ fontSize: '11px', fontWeight: 600, color: '#5E6C84', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Sprint</span>
@@ -788,6 +1278,7 @@ export default function TaskDetailModal({ task, onClose, tasks = [], onUpdateTas
                   {task.sprint || 'SCRUM Sprint 1'}
                 </div>
               </div>
+
 
               {/* ── Due Date ── */}
               <div className="flex justify-between items-center" style={{ marginBottom: '16px' }}>
@@ -801,6 +1292,7 @@ export default function TaskDetailModal({ task, onClose, tasks = [], onUpdateTas
                     <span className="material-symbols-outlined" style={{ fontSize: '14px', color: '#6B778C' }}>calendar_today</span>
                     {localTask.date || 'Jun 26, 2026'}
                   </div>
+
 
                   {isCompletedOpen && (
                     <div className="calendar-dropdown-container" style={{ right: 0, left: 'auto', top: '100%', padding: '12px', width: '280px' }}>
@@ -908,8 +1400,10 @@ export default function TaskDetailModal({ task, onClose, tasks = [], onUpdateTas
                 </div>
               </div>
 
+
               {/* Divider */}
               <div style={{ height: '1px', backgroundColor: '#EBECF0', margin: '4px 0 16px' }}></div>
+
 
               {/* ── Timeline ── */}
               <div>
@@ -926,6 +1420,7 @@ export default function TaskDetailModal({ task, onClose, tasks = [], onUpdateTas
                     >
                       {localTask.createdAt || 'Jun 20, 2026'}
                     </span>
+
 
                     {isCreatedOpen && (
                       <div className="calendar-dropdown-container" style={{ right: 0, top: '100%', padding: '12px', width: '280px', zIndex: 100 }}>
@@ -1030,11 +1525,12 @@ export default function TaskDetailModal({ task, onClose, tasks = [], onUpdateTas
                       </div>
                     )}
                   </div>
-
+                 
                   <div className="flex justify-between items-center">
                     <span style={{ fontSize: '11px', fontWeight: 600, color: '#5E6C84', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Updated</span>
                     <span style={{ fontSize: '12px', fontWeight: 600, color: '#172B4D', paddingRight: '2px' }}>{localTask?.updated_at || '2 mins ago'}</span>
                   </div>
+
 
                   <div className="flex justify-between items-center" style={{ marginTop: '2px' }}>
                     <span style={{ fontSize: '11px', fontWeight: 600, color: '#5E6C84', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Reporter</span>
@@ -1051,10 +1547,58 @@ export default function TaskDetailModal({ task, onClose, tasks = [], onUpdateTas
                 </div>
               </div>
 
+
             </div>
           </aside>
         </div>
       </div>
+      {deleteConfirmCommentId && (
+        <div className="fixed inset-0 z-[11000] flex items-center justify-center" style={{ backgroundColor: 'rgba(9, 30, 66, 0.56)' }} onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-2xl border border-[#DFE1E6]" style={{ width: '340px', padding: '20px 22px', position: 'relative' }} onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setDeleteConfirmCommentId(null)}
+              style={{ position: 'absolute', top: '14px', right: '14px', width: '28px', height: '28px', borderRadius: '50%', border: 'none', background: '#F4F5F7', color: '#42526E', cursor: 'pointer' }}
+              className="hover:bg-[#E6E9EF] transition-colors"
+              aria-label="Close delete confirmation"
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '18px', lineHeight: 1 }}>close</span>
+            </button>
+            <div className="flex items-start gap-3" style={{ marginBottom: '14px' }}>
+              <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#FFEBE9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span className="material-symbols-outlined" style={{ color: '#DE350B', fontSize: '18px' }}>warning</span>
+              </div>
+              <div>
+                <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#172B4D', marginBottom: '4px' }}>Delete this comment?</h3>
+                <p style={{ fontSize: '12px', color: '#5E6C84', lineHeight: '1.4' }}>Once you delete it, it&apos;s gone for good.</p>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-2">
+              <button
+                onClick={() => setDeleteConfirmCommentId(null)}
+                style={{ padding: '8px 14px', border: '1px solid #DFE1E6', borderRadius: '8px', background: 'white', color: '#42526E', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}
+                className="hover:bg-[#F4F5F7] transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setComments(prev => {
+                    const next = prev.filter(c => c.id !== deleteConfirmCommentId);
+                    syncTask({ comments: next });
+                    return next;
+                  });
+                  setDeleteConfirmCommentId(null);
+                }}
+                style={{ padding: '8px 14px', borderRadius: '8px', backgroundColor: '#DE350B', color: '#fff', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}
+                className="hover:opacity-90 transition-all"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
