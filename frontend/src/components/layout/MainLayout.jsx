@@ -1,9 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Outlet, Link, useLocation, useSearchParams, useNavigate } from 'react-router-dom';
+import { Outlet, Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import taskflowLogo from '../../assets/taskflow-logo.png';
 import CreateTaskModal from '../tasks/CreateTaskModal';
 import NotificationDropdown from '../notifications/NotificationDropdown';
-
 export default function MainLayout() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -12,13 +11,15 @@ export default function MainLayout() {
   const [tasksForModal, setTasksForModal] = useState([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [showNotifications, setShowNotifications] = useState(false);
+  
+  // Refs hỗ trợ đóng dropdown khi click ra ngoài
   const dropdownRef = useRef(null);
   const bellRef = useRef(null);
 
-  // Sync role with search parameters
   const roleParam = searchParams.get('role')?.toUpperCase();
-  const currentRole = roleParam === "USER" ? "USER" : "ADMIN";
+  const currentRole = roleParam === 'USER' ? 'USER' : 'ADMIN';
 
+  // State dữ liệu thông báo giả lập để tính toán badge số lượng
   const [allNotifications, setAllNotifications] = useState([
     {
       NOTI_id: 1,
@@ -113,42 +114,34 @@ export default function MainLayout() {
     ));
   };
 
-  const handleToggleRole = () => {
-    const nextRole = currentRole === 'ADMIN' ? 'USER' : 'ADMIN';
-    const params = new URLSearchParams(location.search);
-    params.set('role', nextRole);
-    navigate(`${location.pathname}?${params.toString()}`);
-  };
-
+  // Click outside listener
   useEffect(() => {
     function handleClickOutside(event) {
       if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target) &&
-        bellRef.current &&
-        !bellRef.current.contains(event.target)
+        dropdownRef.current && !dropdownRef.current.contains(event.target) &&
+        bellRef.current && !bellRef.current.contains(event.target)
       ) {
         setShowNotifications(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Tự động kích hoạt Lucide Icons từ CDN khi component mount
+  // Tự động kích hoạt Lucide Icons từ CDN khi component mount hoặc đổi route
   useEffect(() => {
     if (window.lucide) {
       window.lucide.createIcons();
     }
-  }, [location.pathname, showNotifications]); // Re-create icons when path or dropdown changes
+  }, [location.pathname, showNotifications]);
 
   const isDashboardActive = location.pathname === '/dashboard' || location.pathname === '/dashboard/';
   const isTasksActive = location.pathname === '/dashboard/spaces' || location.pathname.includes('/dashboard/tasks');
   const isUsersActive = location.pathname === '/dashboard/users';
+  const isProfileActive = location.pathname === '/dashboard/profile';
   const isNotificationsActive = location.pathname === '/dashboard/notifications';
   const isSettingsActive = location.pathname === '/dashboard/notification-settings';
+
 
   return (
     <div className="h-screen flex overflow-hidden font-['Inter'] bg-[#F5F7FA]">
@@ -236,11 +229,22 @@ export default function MainLayout() {
             </Link>
           )}
 
-          <Link className="flex items-center px-4 py-3 text-[#6B7280] hover:bg-gray-50 rounded-xl transition-colors" to="#">
-            <i className="w-5 h-5 mr-3" data-lucide="user-circle"></i>
-            <span className="text-sm font-medium">Profile</span>
-          </Link>
-
+          {/* Profile Item */}
+          {isProfileActive ? (
+            <div className="relative flex items-center">
+              <div className="sidebar-active-indicator"></div>
+              <Link className="flex items-center flex-1 px-4 py-3 bg-[#E0E8FF] text-[#2D1B4E] rounded-xl transition-colors ml-2" to={`/dashboard/profile${location.search}`}>
+                <i className="w-5 h-5 mr-3 text-[#2D1B4E]" data-lucide="user-circle"></i>
+                <span className="text-sm font-bold">Profile</span>
+              </Link>
+            </div>
+          ) : (
+            <Link className="flex items-center px-4 py-3 text-[#6B7280] hover:bg-gray-50 rounded-xl transition-colors" to={`/dashboard/profile${location.search}`}>
+              <i className="w-5 h-5 mr-3" data-lucide="user-circle"></i>
+              <span className="text-sm font-medium">Profile</span>
+            </Link>
+          )}
+ 
           {/* Notifications Item */}
           {isNotificationsActive ? (
             <div className="relative flex items-center">
@@ -277,7 +281,7 @@ export default function MainLayout() {
           {isSettingsActive ? (
             <div className="relative flex items-center">
               <div className="sidebar-active-indicator"></div>
-              <Link className="flex items-center flex-1 px-4 py-3 bg-[#E0E8FF] text-[#2D1B4E] rounded-xl transition-colors ml-2 text-sm font-bold" to={`/dashboard/notification-settings${location.search}`}>
+              <Link className="flex items-center flex-1 px-4 py-3 bg-[#E0E8FF] text-[#2D1B4E] rounded-xl transition-colors ml-2" to={`/dashboard/notification-settings${location.search}`}>
                 <i className="w-5 h-5 mr-3 text-[#2D1B4E]" data-lucide="settings"></i>
                 <span className="text-sm font-bold">Settings</span>
               </Link>
@@ -300,7 +304,6 @@ export default function MainLayout() {
 
           {/* Cụm Tìm kiếm & Menu 3 gạch mở rộng */}
           <div className="flex items-center flex-1 mr-8">
-            {/* Nút 3 gạch thu gọn/mở rộng Sidebar */}
             <button
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
               className="p-2 mr-3 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
@@ -309,7 +312,6 @@ export default function MainLayout() {
               <i className="w-5 h-5" data-lucide="menu"></i>
             </button>
 
-            {/* Thanh Tìm kiếm chiếm toàn bộ diện tích trống còn lại */}
             <div className="relative w-full">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <i className="h-4 w-4 text-gray-400" data-lucide="search"></i>
@@ -332,8 +334,6 @@ export default function MainLayout() {
               Create
             </button>
 
-
-
             {/* Notification Bell Dropdown */}
             <div className="relative" ref={bellRef}>
               <button
@@ -347,6 +347,7 @@ export default function MainLayout() {
                 )}
               </button>
 
+              {/* 🟢 ĐÂY CHÍNH LÀ NƠI HIỂN THỊ DANH SÁCH THÔNG BÁO TRÊN HEADER */}
               {showNotifications && (
                 <div ref={dropdownRef} className="absolute right-0 z-50">
                   <NotificationDropdown
