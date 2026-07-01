@@ -3,6 +3,7 @@ import { Outlet, Link, useLocation, useNavigate, useSearchParams } from 'react-r
 import taskflowLogo from '../../assets/taskflow-logo.png';
 import CreateTaskModal from '../tasks/CreateTaskModal';
 import NotificationDropdown from '../notifications/NotificationDropdown';
+import SettingsDropdown from '../settings/SettingsDropdown';
 export default function MainLayout() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -11,10 +12,13 @@ export default function MainLayout() {
   const [tasksForModal, setTasksForModal] = useState([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   
   // Refs hỗ trợ đóng dropdown khi click ra ngoài
   const dropdownRef = useRef(null);
   const bellRef = useRef(null);
+  const settingsRef = useRef(null);
+  const settingsDropdownRef = useRef(null);
 
   const roleParam = searchParams.get('role')?.toUpperCase();
   const currentRole = roleParam === 'USER' ? 'USER' : 'ADMIN';
@@ -123,6 +127,12 @@ export default function MainLayout() {
       ) {
         setShowNotifications(false);
       }
+      if (
+        settingsDropdownRef.current && !settingsDropdownRef.current.contains(event.target) &&
+        settingsRef.current && !settingsRef.current.contains(event.target)
+      ) {
+        setShowSettings(false);
+      }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -133,7 +143,7 @@ export default function MainLayout() {
     if (window.lucide) {
       window.lucide.createIcons();
     }
-  }, [location.pathname, showNotifications]);
+  }, [location.pathname, showNotifications, showSettings]);
 
   const isDashboardActive = location.pathname === '/dashboard' || location.pathname === '/dashboard/';
   const isTasksActive = location.pathname === '/dashboard/spaces' || location.pathname.includes('/dashboard/tasks');
@@ -273,25 +283,29 @@ export default function MainLayout() {
         </nav>
 
         {/* Bottom Navigation */}
-        <div className="px-3 py-6 border-t border-gray-100 space-y-1">
+        <div className={`px-3 py-6 border-t border-gray-100 space-y-1 relative transition-transform duration-300 ${showSettings ? '-translate-y-[100px]' : ''}`}>
           <Link className="flex items-center px-4 py-3 text-[#6B7280] hover:bg-gray-50 rounded-xl transition-colors" to="#">
             <i className="w-5 h-5 mr-3" data-lucide="help-circle"></i>
             <span className="text-sm font-medium">Help</span>
           </Link>
-          {isSettingsActive ? (
-            <div className="relative flex items-center">
-              <div className="sidebar-active-indicator"></div>
-              <Link className="flex items-center flex-1 px-4 py-3 bg-[#E0E8FF] text-[#2D1B4E] rounded-xl transition-colors ml-2" to={`/dashboard/notification-settings${location.search}`}>
-                <i className="w-5 h-5 mr-3 text-[#2D1B4E]" data-lucide="settings"></i>
-                <span className="text-sm font-bold">Settings</span>
-              </Link>
-            </div>
-          ) : (
-            <Link className="flex items-center px-4 py-3 text-[#6B7280] hover:bg-gray-50 rounded-xl transition-colors" to={`/dashboard/notification-settings${location.search}`}>
-              <i className="w-5 h-5 mr-3" data-lucide="settings"></i>
-              <span className="text-sm font-medium">Settings</span>
-            </Link>
-          )}
+          <div className="relative" ref={settingsRef}>
+            <button
+              onClick={() => setShowSettings(!showSettings)}
+              className={`flex items-center w-full px-4 py-3 rounded-xl transition-colors ${isSettingsActive || showSettings ? 'bg-[#E0E8FF] text-[#2D1B4E]' : 'text-[#6B7280] hover:bg-gray-50'}`}
+            >
+              {(isSettingsActive || showSettings) && <div className="sidebar-active-indicator"></div>}
+              <div className="flex items-center flex-1">
+                <i className={`w-5 h-5 mr-3 ${isSettingsActive || showSettings ? 'text-[#2D1B4E]' : ''}`} data-lucide="settings"></i>
+                <span className={`text-sm ${isSettingsActive || showSettings ? 'font-bold' : 'font-medium'}`}>Settings</span>
+              </div>
+            </button>
+
+            {showSettings && (
+              <div ref={settingsDropdownRef} className="absolute left-0 top-full mt-2 z-50 w-full">
+                <SettingsDropdown onClose={() => setShowSettings(false)} />
+              </div>
+            )}
+          </div>
         </div>
       </aside>
       {/* END: LeftSidebar */}
