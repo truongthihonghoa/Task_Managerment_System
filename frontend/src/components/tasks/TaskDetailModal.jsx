@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import '../../styles/CreateTaskModal.css';
 import RichTextEditor from './RichTextEditor';
 
 
- export default function TaskDetailModal({ task, onClose, tasks = [], onUpdateTask }) {
+export default function TaskDetailModal({ task, onClose, tasks = [], onUpdateTask, currentRole = 'ADMIN', currentUser = { id: 'admin-demo-user', name: 'Alex Morgan', role: 'ADMIN' } }) {
   const [activeTab, setActiveTab] = useState('comments');
   const [commentText, setCommentText] = useState('');
   const [isStatusOpen, setIsStatusOpen] = useState(false);
@@ -49,13 +49,6 @@ import RichTextEditor from './RichTextEditor';
     { user_id: '8ce04f65-ea2c-4279-8350-7c1f0e81c9f5', name: 'Trong Nghia', initials: 'TN', color: '#14B8A6', textColor: '#FFFFFF' }
   ];
 
-  // Mock user data for "Changed by" field in history (sau cần thay: Trang Nguyen hiện tại là mình giả định là “current user” đang thao tác sửa assignee.)
-  const currentUser = {
-    user_id: '7f58c8c9-e988-4959-aabc-7d09e02f6e65',
-    name: 'Trang Nguyen'
-  };
-
-
   const [completedMonth, setCompletedMonth] = useState(5);
   const [completedYear, setCompletedYear] = useState(2026);
   const [createdMonth, setCreatedMonth] = useState(5);
@@ -64,14 +57,45 @@ import RichTextEditor from './RichTextEditor';
   const replaceInputRef = useRef(null);
   const [replaceTargetId, setReplaceTargetId] = useState(null);
 
+  const currentUserId = currentUser?.id || currentUser?.user_id || null;
+  const currentUserName = currentUser?.name || currentUser?.authorName || 'Unknown User';
+  const isAdmin = currentRole === 'ADMIN';
+  const currentUserNames = useMemo(() => [currentUser?.name, currentUser?.fullName, currentUser?.username].filter(Boolean), [currentUser]);
+  const statusOptions = ['New', 'In Progress', 'In Testing', 'Pending Review', 'Need Revision', 'Done', 'Cancelled'];
+  const canEditTaskContent = useMemo(() => {
+    if (isAdmin || currentRole === 'USER') return true;
+    if (!currentUserId || !localTask) return false;
+    return (
+      localTask.creatorId === currentUserId ||
+      localTask.reporterId === currentUserId ||
+      localTask.assigneeId === currentUserId ||
+      currentUserNames.includes(localTask.creator) ||
+      currentUserNames.includes(localTask.reporter) ||
+      currentUserNames.includes(localTask.assignee)
+    );
+  }, [isAdmin, currentRole, currentUserId, currentUserNames, localTask]);
+  const canManageAdminFields = isAdmin || currentRole === 'USER';
+
+  const isCommentOwner = (comment) => {
+    if (!comment || !currentUserId) return false;
+    return comment.authorId === currentUserId || comment.author === currentUserName;
+  };
+
   const formatFileSize = (bytes) => {
     if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
     if (bytes >= 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${bytes} B`;
   };
 
-  const createAttachmentFromFile = (file, index = 0) => {
+  const syncComments = (nextComments) => {
+    setComments(nextComments);
+    setLocalTask(prev => ({ ...prev, comments: nextComments }));
+    syncTask({ comments: nextComments });
+  };
+
+  const createAttachmentFromFile = (file, index = 0, uploaderId = null) => {
     const isImage = file.type.startsWith('image/');
+    const url = isImage ? URL.createObjectURL(file) : null;
     return {
       id: Date.now() + index,
       name: file.name,
@@ -81,8 +105,15 @@ import RichTextEditor from './RichTextEditor';
       color: file.name.endsWith('.zip') ? '#4C2B74' : file.name.endsWith('.pdf') ? '#DE350B' : '#4C2B74',
       bg: file.name.endsWith('.zip') ? '#EBF5FF' : file.name.endsWith('.pdf') ? '#FFF5F5' : '#EEF3FF',
       type: isImage ? 'image' : 'file',
-      previewUrl: isImage ? URL.createObjectURL(file) : null
+      previewUrl: url,
+      url,
+      uploadedBy: uploaderId
     };
+  };
+
+  const isAttachmentOwner = (attachment) => {
+    if (!attachment || !currentUserId) return false;
+    return attachment.uploadedBy === currentUserId || attachment.authorId === currentUserId || attachment.uploaderId === currentUserId;
   };
 
   const syncTask = (updates) => {
@@ -90,6 +121,15 @@ import RichTextEditor from './RichTextEditor';
       const next = { ...prev, ...updates };
       if (onUpdateTask) onUpdateTask(next);
       return next;
+    });
+  };
+
+  const hydrateAttachments = (attachmentList = []) => {
+    return attachmentList.map((att) => {
+      if (att && att.type === 'image' && !att.previewUrl && att.url) {
+        return { ...att, previewUrl: att.url };
+      }
+      return att;
     });
   };
 
@@ -114,7 +154,24 @@ import RichTextEditor from './RichTextEditor';
     if (!file || replaceTargetId == null) return;
     const newAtt = createAttachmentFromFile(file);
     setAttachments(prev => {
-      const next = prev.map(a => a.id === replaceTargetId ? { ...a, name: newAtt.name, size: newAtt.size, date: newAtt.date, icon: newAtt.icon, color: newAtt.color, bg: newAtt.bg, type: newAtt.type, previewUrl: newAtt.previewUrl } : a);
+      const next = prev.map(a => {
+        if (a.id !== replaceTargetId) return a;
+        if (a.previewUrl) {
+          try { URL.revokeObjectURL(a.previewUrl); } catch (_) {}
+        }
+        return {
+          ...a,
+          name: newAtt.name,
+          size: newAtt.size,
+          date: newAtt.date,
+          icon: newAtt.icon,
+          color: newAtt.color,
+          bg: newAtt.bg,
+          type: newAtt.type,
+          previewUrl: newAtt.previewUrl,
+          url: newAtt.url
+        };
+      });
       setLocalTask(prevTask => ({ ...prevTask, attachments: next }));
       syncTask({ attachments: next });
       return next;
@@ -127,7 +184,7 @@ import RichTextEditor from './RichTextEditor';
     setAttachments(prev => {
       const toDelete = prev.find(a => a.id === id);
       if (toDelete && toDelete.previewUrl) {
-        try { URL.revokeObjectURL(toDelete.previewUrl); } catch(_){}
+        try { URL.revokeObjectURL(toDelete.previewUrl); } catch (_) { }
       }
       const next = prev.filter(a => a.id !== id);
       // only remove from attachments list; do not alter description or comments
@@ -167,14 +224,14 @@ import RichTextEditor from './RichTextEditor';
     const files = Array.from(event.target.files || []);
     if (!files.length) return;
 
-    addAttachments(files.map((file, index) => createAttachmentFromFile(file, index)));
+    addAttachments(files.map((file, index) => createAttachmentFromFile(file, index, currentUserId)));
     setIsUploadAreaOpen(false);
     event.target.value = '';
   };
 
   const handleFileUploadObject = (file) => {
     if (!file) return;
-    const attachment = createAttachmentFromFile(file);
+    const attachment = createAttachmentFromFile(file, 0, currentUserId);
     if (isDescriptionEditing) {
       setPendingDescriptionAttachments(prev => [...prev, attachment]);
     } else {
@@ -217,7 +274,7 @@ import RichTextEditor from './RichTextEditor';
           parentId: null
         }
       ]);
-      setAttachments(task.attachments || []);
+      setAttachments(hydrateAttachments(task.attachments || []));
       setPendingDescriptionAttachments([]);
       setReplyToCommentId(null);
       setEditCommentId(null);
@@ -275,7 +332,7 @@ import RichTextEditor from './RichTextEditor';
     if (parts.length === 0) return 'UN';
     return parts.map(n => n ? n[0] : '').join('').toUpperCase().substring(0, 2);
   };
-   
+
   const getReplies = (parentId) => comments.filter(comment => comment.parentId === parentId);
 
 
@@ -306,25 +363,29 @@ import RichTextEditor from './RichTextEditor';
             >
               Reply
             </button>
-            <button
-              style={{ fontSize: '11px', fontWeight: 500, color: '#6B778C', background: 'none', border: 'none', cursor: 'pointer' }}
-              className="hover:text-[#4C2B74]"
-              onClick={() => {
-                setTempComment(comment.text);
-                setReplyToCommentId(null);
-                setEditCommentId(comment.id);
-                setIsCommentEditing(true);
-              }}
-            >
-              Edit
-            </button>
-            <button
-              style={{ fontSize: '11px', fontWeight: 500, color: '#DE350B', background: 'none', border: 'none', cursor: 'pointer' }}
-              className="hover:text-[#B91C1C]"
-              onClick={() => setDeleteConfirmCommentId(comment.id)}
-            >
-              Delete
-            </button>
+            {isCommentOwner(comment) && (
+              <>
+                <button
+                  style={{ fontSize: '11px', fontWeight: 500, color: '#6B778C', background: 'none', border: 'none', cursor: 'pointer' }}
+                  className="hover:text-[#4C2B74]"
+                  onClick={() => {
+                    setTempComment(comment.text);
+                    setReplyToCommentId(null);
+                    setEditCommentId(comment.id);
+                    setIsCommentEditing(true);
+                  }}
+                >
+                  Edit
+                </button>
+                <button
+                  style={{ fontSize: '11px', fontWeight: 500, color: '#DE350B', background: 'none', border: 'none', cursor: 'pointer' }}
+                  className="hover:text-[#B91C1C]"
+                  onClick={() => setDeleteConfirmCommentId(comment.id)}
+                >
+                  Delete
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -342,16 +403,18 @@ import RichTextEditor from './RichTextEditor';
             <button
               onClick={() => {
                 if (tempComment.trim()) {
-                  setComments(prev => [
+                  const next = [
                     {
                       id: Date.now(),
-                      author: 'You',
+                      author: currentUserName,
+                      authorId: currentUserId,
                       date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
                       text: tempComment,
                       parentId: comment.id
                     },
-                    ...prev
-                  ]);
+                    ...comments
+                  ];
+                  syncComments(next);
                 }
                 setIsCommentEditing(false);
                 setTempComment('');
@@ -390,11 +453,8 @@ import RichTextEditor from './RichTextEditor';
             <button
               onClick={() => {
                 if (tempComment.trim()) {
-                  setComments(prev => {
-                    const next = prev.map(c => c.id === comment.id ? { ...c, text: tempComment } : c);
-                    syncTask({ comments: next });
-                    return next;
-                  });
+                  const next = comments.map(c => c.id === comment.id ? { ...c, text: tempComment } : c);
+                  syncComments(next);
                 }
                 setIsCommentEditing(false);
                 setTempComment('');
@@ -498,13 +558,13 @@ import RichTextEditor from './RichTextEditor';
       task_id: updatedTask.task_id || updatedTask.id,
       previous_assignee_id: previousAssignee.user_id,
       new_assignee_id: newAssignee.user_id,
-      changed_by: currentUser.user_id,
+      changed_by: currentUserId,
       reason: '',
       change_status: updatedTask.status || '',
       changed_at: new Date().toISOString(),
       previous_assignee_name: previousAssignee.name,
       new_assignee_name: newAssignee.name,
-      changed_by_name: currentUser.name
+      changed_by_name: currentUserName
     };
   };
 
@@ -587,8 +647,8 @@ import RichTextEditor from './RichTextEditor';
             {/* Title */}
             {!isTitleEditing ? (
               <h1
-                onClick={() => setIsTitleEditing(true)}
-                className="hover:bg-[#F4F5F7] rounded cursor-pointer transition-colors"
+                onClick={() => { if (canEditTaskContent) setIsTitleEditing(true); }}
+                className={`rounded transition-colors ${canEditTaskContent ? 'hover:bg-[#F4F5F7] cursor-pointer' : ''}`}
                 style={{ fontSize: '20px', fontWeight: 500, color: '#172B4D', marginBottom: '16px', lineHeight: '1.4', padding: '4px 8px', marginLeft: '-8px' }}
               >
                 {localTask.title}
@@ -601,11 +661,13 @@ import RichTextEditor from './RichTextEditor';
                   onChange={(e) => setTempTitle(e.target.value)}
                   onBlur={() => {
                     setLocalTask(prev => ({ ...prev, title: tempTitle }));
+                    syncTask({ title: tempTitle });
                     setIsTitleEditing(false);
                   }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       setLocalTask(prev => ({ ...prev, title: tempTitle }));
+                      syncTask({ title: tempTitle });
                       setIsTitleEditing(false);
                     } else if (e.key === 'Escape') {
                       setTempTitle(localTask.title);
@@ -641,13 +703,13 @@ import RichTextEditor from './RichTextEditor';
               <h3 style={{ fontSize: '11px', fontWeight: 600, color: '#5E6C84', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                 Description
               </h3>
-             
+
 
               {!isDescriptionEditing ? (
                 <div
-                  className="group cursor-text hover:bg-[#F4F5F7] transition-colors"
+                  className={`group ${canEditTaskContent ? 'cursor-text hover:bg-[#F4F5F7]' : 'cursor-default'}`}
                   style={{ padding: '12px 16px', border: '1px solid #DFE1E6', borderRadius: '4px', minHeight: '100px', backgroundColor: 'white' }}
-                  onClick={() => setIsDescriptionEditing(true)}
+                  onClick={() => { if (canEditTaskContent) setIsDescriptionEditing(true); }}
                 >
                   {localTask.description ? (
                     <div
@@ -707,13 +769,15 @@ import RichTextEditor from './RichTextEditor';
                 <h3 style={{ fontSize: '11px', fontWeight: 600, color: '#5E6C84', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                   Attachments ({attachments.length})
                 </h3>
-                <button
-                  onClick={openUploadDialog}
-                  style={{ fontSize: '12px', fontWeight: 600, color: '#4C2B74', background: 'none', border: 'none', cursor: 'pointer' }}
-                  className="hover:text-[#2E1C54] transition-colors"
-                >
-                  Upload file
-                </button>
+                {canEditTaskContent && (
+                  <button
+                    onClick={openUploadDialog}
+                    style={{ fontSize: '12px', fontWeight: 600, color: '#4C2B74', background: 'none', border: 'none', cursor: 'pointer' }}
+                    className="hover:text-[#2E1C54] transition-colors"
+                  >
+                    Upload file
+                  </button>
+                )}
                 <input
                   type="file"
                   ref={uploadInputRef}
@@ -749,23 +813,27 @@ import RichTextEditor from './RichTextEditor';
                       <span className="truncate" style={{ fontSize: '13px', fontWeight: 600, color: '#172B4D' }}>{file.name}</span>
                       <span style={{ fontSize: '11px', color: '#6B778C' }}>{file.size} • {file.date}</span>
                     </div>
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); triggerReplace(file.id); }}
-                        title="Replace"
-                        style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#6B778C', padding: 6, borderRadius: 6 }}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <span className="material-symbols-outlined" style={{ fontSize: 18 }}>edit</span>
-                      </button>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); deleteAttachment(file.id); }}
-                        title="Delete"
-                        style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#DE350B', padding: 6, borderRadius: 6 }}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <span className="material-symbols-outlined">delete</span>
-                      </button>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      {canEditTaskContent && isAttachmentOwner(file) && (
+                        <>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); triggerReplace(file.id); }}
+                            title="Replace"
+                            style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#6B778C', padding: 6, borderRadius: 6 }}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>edit</span>
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); deleteAttachment(file.id); }}
+                            title="Delete"
+                            style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#DE350B', padding: 6, borderRadius: 6 }}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <span className="material-symbols-outlined">delete</span>
+                          </button>
+                        </>
+                      )}
                       {file.previewUrl ? (
                         <button
                           onClick={(e) => downloadAttachment(file, e)}
@@ -959,16 +1027,18 @@ import RichTextEditor from './RichTextEditor';
                             <button
                               onClick={() => {
                                 if (tempComment.trim()) {
-                                  setComments(prev => [
+                                  const next = [
                                     {
                                       id: Date.now(),
-                                      author: 'You',
+                                      author: currentUserName,
+                                      authorId: currentUserId,
                                       date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
                                       text: tempComment,
                                       parentId: null
                                     },
-                                    ...prev
-                                  ]);
+                                    ...comments
+                                  ];
+                                  syncComments(next);
                                 }
                                 setIsCommentEditing(false);
                                 setTempComment('');
@@ -1071,7 +1141,7 @@ import RichTextEditor from './RichTextEditor';
           >
             {/* Sidebar Header */}
             <h2 style={{ fontSize: '13px', fontWeight: 700, color: '#42526E', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '16px' }}>
-              Task Detail
+              DETAIL TASK
             </h2>
 
 
@@ -1085,15 +1155,15 @@ import RichTextEditor from './RichTextEditor';
                 </label>
                 <div
                   className="relative"
-                  onMouseEnter={() => setIsAssigneeOpen(true)}
-                  onMouseLeave={() => setIsAssigneeOpen(false)}
+                  onMouseEnter={() => { if (canManageAdminFields) setIsAssigneeOpen(true); }}
+                  onMouseLeave={() => { if (canManageAdminFields) setIsAssigneeOpen(false); }}
                 >
                   {(() => {
                     const profile = getAssigneeProfile(localTask.assignee);
                     return (
                       <>
                         <div
-                          className="flex items-center gap-3 w-full rounded-none bg-white px-3 py-2 text-left transition-colors hover:bg-[#F4F5F7]"
+                          className={`flex items-center gap-3 w-full rounded-none bg-white px-3 py-2 text-left transition-colors ${canManageAdminFields ? 'hover:bg-[#F4F5F7]' : ''}`}
                         >
                           <div
                             className="shrink-0 flex items-center justify-center"
@@ -1110,9 +1180,9 @@ import RichTextEditor from './RichTextEditor';
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleAssigneeChange(user);
+                                if (canManageAdminFields) handleAssigneeChange(user);
                               }}
-                              className="w-full flex items-center gap-3 px-3 py-2 text-left text-[12px] hover:bg-[#EBF0FF] transition-colors"
+                              className={`w-full flex items-center gap-3 px-3 py-2 text-left text-[12px] ${canManageAdminFields ? 'hover:bg-[#EBF0FF]' : ''} transition-colors`}
                             >
                               <div
                                 className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold"
@@ -1138,14 +1208,14 @@ import RichTextEditor from './RichTextEditor';
                 </label>
                 <div className="relative">
                   <div
-                    className="status-custom-trigger"
+                    className={`status-custom-trigger ${canEditTaskContent ? '' : 'cursor-default opacity-90'}`}
                     style={{ padding: '4px 10px', border: '1px solid #DFE1E6', borderRadius: '4px', background: 'white' }}
-                    onClick={() => setIsStatusOpen(!isStatusOpen)}
+                    onClick={() => { if (canEditTaskContent) setIsStatusOpen(!isStatusOpen); }}
                   >
                     <span className={`status-badge-pill ${(localTask?.status || '') === 'Need Revision' ? 'badge-revision' :
-                        (localTask?.status || '') === 'Done' ? 'badge-done' :
-                          ((localTask?.status || '') === 'Cancelled' || (localTask?.status || '') === 'New') ? 'badge-neutral' :
-                            'badge-progress'
+                      (localTask?.status || '') === 'Done' ? 'badge-done' :
+                        ((localTask?.status || '') === 'Cancelled' || (localTask?.status || '') === 'New') ? 'badge-neutral' :
+                          'badge-progress'
                       }`} style={{ fontSize: '11px' }}>
                       {(localTask?.status || 'IN PROGRESS').toUpperCase()}
                     </span>
@@ -1153,21 +1223,22 @@ import RichTextEditor from './RichTextEditor';
                   </div>
 
 
-                  {isStatusOpen && (
+                  {isStatusOpen && canEditTaskContent && (
                     <div className="status-custom-dropdown" style={{ left: 0, width: '100%' }}>
-                      {['New', 'In Progress', 'In Testing', 'Pending Review', 'Need Revision', 'Done', 'Cancelled'].map(s => (
+                      {statusOptions.map(s => (
                         <div
                           key={s}
                           className="status-dropdown-item"
                           onClick={() => {
                             setLocalTask(prev => ({ ...prev, status: s }));
+                            syncTask({ status: s });
                             setIsStatusOpen(false);
                           }}
                         >
                           <span className={`status-badge-pill ${s === 'Need Revision' ? 'badge-revision' :
-                              s === 'Done' ? 'badge-done' :
-                                (s === 'Cancelled' || s === 'New') ? 'badge-neutral' :
-                                  'badge-progress'
+                            s === 'Done' ? 'badge-done' :
+                              (s === 'Cancelled' || s === 'New') ? 'badge-neutral' :
+                                'badge-progress'
                             }`} style={{ fontSize: '10px' }}>
                             {s.toUpperCase()}
                           </span>
@@ -1186,9 +1257,9 @@ import RichTextEditor from './RichTextEditor';
                 </label>
                 <div className="relative">
                   <div
-                    className="priority-custom-trigger"
+                    className={`priority-custom-trigger ${canManageAdminFields ? '' : 'cursor-default opacity-90'}`}
                     style={{ padding: '6px 10px', borderRadius: '4px', border: '1px solid #DFE1E6' }}
-                    onClick={() => setIsPriorityOpen(!isPriorityOpen)}
+                    onClick={() => { if (canManageAdminFields) setIsPriorityOpen(!isPriorityOpen); }}
                   >
                     <div className="flex items-center gap-2">
                       {localTask.priority === 'High' ? (
@@ -1204,7 +1275,7 @@ import RichTextEditor from './RichTextEditor';
                   </div>
 
 
-                  {isPriorityOpen && (
+                  {isPriorityOpen && canManageAdminFields && (
                     <div className="priority-custom-dropdown" style={{ left: 0, width: '100%' }}>
                       {[
                         { label: 'High', icon: 'keyboard_arrow_up', color: '#DE350B' },
@@ -1216,6 +1287,7 @@ import RichTextEditor from './RichTextEditor';
                           className="priority-dropdown-item flex items-center gap-3"
                           onClick={() => {
                             setLocalTask(prev => ({ ...prev, priority: p.label }));
+                            syncTask({ priority: p.label });
                             setIsPriorityOpen(false);
                           }}
                         >
@@ -1240,8 +1312,14 @@ import RichTextEditor from './RichTextEditor';
                   <input
                     type="number"
                     value={localTask?.pts || 0}
-                    onChange={(e) => setLocalTask(prev => ({ ...prev, pts: parseInt(e.target.value) || 0 }))}
+                    onChange={(e) => {
+                      if (!canManageAdminFields) return;
+                      const pts = parseInt(e.target.value) || 0;
+                      setLocalTask(prev => ({ ...prev, pts }));
+                      syncTask({ pts });
+                    }}
                     className="story-points-input"
+                    readOnly={!canManageAdminFields}
                     style={{
                       width: '45px',
                       padding: '2px 4px',
@@ -1252,7 +1330,8 @@ import RichTextEditor from './RichTextEditor';
                       color: '#172B4D',
                       textAlign: 'center',
                       outline: 'none',
-                      backgroundColor: '#F4F5F7'
+                      backgroundColor: canManageAdminFields ? '#F4F5F7' : '#ECEFF4',
+                      cursor: canManageAdminFields ? 'text' : 'not-allowed'
                     }}
                   />
                   <style>{`
@@ -1285,16 +1364,16 @@ import RichTextEditor from './RichTextEditor';
                 <span style={{ fontSize: '11px', fontWeight: 600, color: '#5E6C84', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Completed</span>
                 <div className="relative">
                   <div
-                    className="flex items-center gap-1.5 cursor-pointer hover:bg-[#F4F5F7] rounded px-2 py-1 transition-colors"
+                    className={`flex items-center gap-1.5 ${canManageAdminFields ? 'cursor-pointer hover:bg-[#F4F5F7]' : ''} rounded px-2 py-1 transition-colors`}
                     style={{ fontSize: '12px', fontWeight: 600, color: '#172B4D' }}
-                    onClick={() => setIsCompletedOpen(!isCompletedOpen)}
+                    onClick={() => { if (canManageAdminFields) setIsCompletedOpen(!isCompletedOpen); }}
                   >
                     <span className="material-symbols-outlined" style={{ fontSize: '14px', color: '#6B778C' }}>calendar_today</span>
                     {localTask.date || 'Jun 26, 2026'}
                   </div>
 
 
-                  {isCompletedOpen && (
+                  {isCompletedOpen && canManageAdminFields && (
                     <div className="calendar-dropdown-container" style={{ right: 0, left: 'auto', top: '100%', padding: '12px', width: '280px' }}>
                       <div className="calendar-header flex items-center justify-between mb-4">
                         <div className="flex gap-2">
@@ -1386,6 +1465,7 @@ import RichTextEditor from './RichTextEditor';
                                 onClick={() => {
                                   const formatted = `${monthAbbrs[completedMonth]} ${day}, ${completedYear}`;
                                   setLocalTask(prev => ({ ...prev, date: formatted }));
+                                  syncTask({ date: formatted });
                                   setIsCompletedOpen(false);
                                 }}
                               >
@@ -1414,15 +1494,15 @@ import RichTextEditor from './RichTextEditor';
                   <div className="flex justify-between items-center relative">
                     <span style={{ fontSize: '11px', fontWeight: 600, color: '#5E6C84', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Created</span>
                     <span
-                      className="cursor-pointer hover:text-[#4C2B74] transition-colors"
+                      className={`transition-colors ${isAdmin ? 'cursor-pointer hover:text-[#4C2B74]' : 'opacity-80 cursor-default'}`}
                       style={{ fontSize: '12px', fontWeight: 600, color: '#172B4D' }}
-                      onClick={() => setIsCreatedOpen(!isCreatedOpen)}
+                      onClick={() => { if (isAdmin) setIsCreatedOpen(!isCreatedOpen); }}
                     >
                       {localTask.createdAt || 'Jun 20, 2026'}
                     </span>
 
 
-                    {isCreatedOpen && (
+                    {isCreatedOpen && isAdmin && (
                       <div className="calendar-dropdown-container" style={{ right: 0, top: '100%', padding: '12px', width: '280px', zIndex: 100 }}>
                         <div className="calendar-header flex items-center justify-between mb-4">
                           <div className="flex gap-2">
@@ -1513,6 +1593,7 @@ import RichTextEditor from './RichTextEditor';
                                   onClick={() => {
                                     const formatted = `${monthAbbrs[createdMonth]} ${day}, ${createdYear}`;
                                     setLocalTask(prev => ({ ...prev, createdAt: formatted }));
+                                    syncTask({ createdAt: formatted });
                                     setIsCreatedOpen(false);
                                   }}
                                 >
@@ -1525,7 +1606,7 @@ import RichTextEditor from './RichTextEditor';
                       </div>
                     )}
                   </div>
-                 
+
                   <div className="flex justify-between items-center">
                     <span style={{ fontSize: '11px', fontWeight: 600, color: '#5E6C84', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Updated</span>
                     <span style={{ fontSize: '12px', fontWeight: 600, color: '#172B4D', paddingRight: '2px' }}>{localTask?.updated_at || '2 mins ago'}</span>
@@ -1533,15 +1614,15 @@ import RichTextEditor from './RichTextEditor';
 
 
                   <div className="flex justify-between items-center" style={{ marginTop: '2px' }}>
-                    <span style={{ fontSize: '11px', fontWeight: 600, color: '#5E6C84', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Reporter</span>
+                    <span style={{ fontSize: '11px', fontWeight: 600, color: '#5E6C84', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Creator</span>
                     <div className="flex items-center gap-2">
                       <div
                         className="flex items-center justify-center"
                         style={{ width: '20px', height: '20px', borderRadius: '50%', backgroundColor: '#DFE1E6', fontSize: '10px', fontWeight: 700, color: '#42526E' }}
                       >
-                        {getInitials(localTask?.reporter || 'Peter Tan')}
+                        {getInitials(localTask?.creator || 'Peter Tan')}
                       </div>
-                      <span style={{ fontSize: '12px', fontWeight: 600, color: '#172B4D' }}>{localTask?.reporter || 'Peter Tan'}</span>
+                      <span style={{ fontSize: '12px', fontWeight: 600, color: '#172B4D' }}>{localTask?.creator || 'Peter Tan'}</span>
                     </div>
                   </div>
                 </div>
@@ -1582,11 +1663,8 @@ import RichTextEditor from './RichTextEditor';
               </button>
               <button
                 onClick={() => {
-                  setComments(prev => {
-                    const next = prev.filter(c => c.id !== deleteConfirmCommentId);
-                    syncTask({ comments: next });
-                    return next;
-                  });
+                  const next = comments.filter(c => c.id !== deleteConfirmCommentId);
+                  syncComments(next);
                   setDeleteConfirmCommentId(null);
                 }}
                 style={{ padding: '8px 14px', borderRadius: '8px', backgroundColor: '#DE350B', color: '#fff', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}

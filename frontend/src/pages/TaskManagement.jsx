@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate, useOutletContext, useLocation } from 'react-router-dom';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
@@ -37,10 +37,28 @@ const getAssigneeProfile = (assignee) => {
   };
 };
 
+const getNextTaskId = (tasks) => {
+  const maxTaskNumber = tasks.reduce((max, task) => {
+    const match = /^TM-(\d+)$/.exec(task.id || '');
+    return match ? Math.max(max, Number(match[1])) : max;
+  }, 0);
+
+  return `TM-${maxTaskNumber + 1}`;
+};
+
+const formatTaskDate = (dateValue) => {
+  const date = dateValue ? new Date(dateValue) : new Date();
+  if (Number.isNaN(date.getTime())) {
+    return new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+  }
+
+  return date.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+};
+
 export default function TaskManagement() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { setShowCreateModal, setTasksForModal } = useOutletContext() || {};
+  const { setShowCreateModal, setTasksForModal, setCreateTaskHandler } = useOutletContext() || {};
   const [view, setView] = useState('list');
   const [selectedTasks, setSelectedTasks] = useState([]);
   const [isSprintExpanded, setIsSprintExpanded] = useState(true);
@@ -73,17 +91,17 @@ export default function TaskManagement() {
   const [openSprintMenuId, setOpenSprintMenuId] = useState(null);
 
   const [tasks, setTasks] = useState([
-    { id: "TM-104", title: "Infrastructure setup", assignee: "Pham Tien", pts: 4, status: "New", priority: "High", date: "Jun 24, 2026", description: "" },
-    { id: "TM-301", title: "API Documentation update", assignee: "Hoang Hoa", pts: 3, status: "In Progress", priority: "Medium", date: "Jun 28, 2026", description: "" },
-    { id: "TM-89", title: "Checkout flow mobile fix", assignee: "Trong Nghia", pts: 5, status: "In Testing", priority: "High", date: "Jul 02, 2026", description: "" },
-    { id: "TM-102", title: "Security Protocols Audit", assignee: "Pham Tien", pts: 8, status: "Done", priority: "High", date: "Jun 20, 2026", description: "" },
-    { id: "TM-212", title: "SSO Authentication implementation", assignee: "Hoang Hoa", pts: 2, status: "In Progress", priority: "Medium", date: "Jun 25, 2026", description: "" },
-    { id: "TM-105", title: "API Integration & Testing", assignee: "Trong Nghia", pts: 3, status: "Pending Review", priority: "High", date: "Jul 05, 2026", description: "" },
-    { id: "TM-402", title: "User Feedback UI Refactor", assignee: "Pham Tien", pts: 2, status: "Need Revision", priority: "Low", date: "Jul 10, 2026", description: "" },
-    { id: "TM-505", title: "Database Migration Script", assignee: "Hoang Hoa", pts: 5, status: "New", priority: "High", date: "Jul 12, 2026", description: "" },
-    { id: "TM-610", title: "Dashboard Charts optimization", assignee: "Trong Nghia", pts: 3, status: "In Testing", priority: "Medium", date: "Jul 15, 2026", description: "" },
-    { id: "TM-701", title: "Mobile App Performance Tuning", assignee: "Trong Nghia", pts: 4, status: "In Testing", priority: "Medium", date: "Jul 18, 2026", description: "" },
-    { id: "TM-802", title: "Push Notification Service", assignee: "Hoang Hoa", pts: 3, status: "New", priority: "High", date: "Jul 20, 2026", description: "" },
+    { id: "TM-1", title: "Infrastructure setup", assignee: "Pham Tien", pts: 4, status: "New", priority: "High", date: "Jun 24, 2026", description: "" },
+    { id: "TM-2", title: "API Documentation update", assignee: "Hoang Hoa", pts: 3, status: "In Progress", priority: "Medium", date: "Jun 28, 2026", description: "" },
+    { id: "TM-3", title: "Checkout flow mobile fix", assignee: "Trong Nghia", pts: 5, status: "In Testing", priority: "High", date: "Jul 02, 2026", description: "" },
+    { id: "TM-4", title: "Security Protocols Audit", assignee: "Pham Tien", pts: 8, status: "Done", priority: "High", date: "Jun 20, 2026", description: "" },
+    { id: "TM-5", title: "SSO Authentication implementation", assignee: "Hoang Hoa", pts: 2, status: "In Progress", priority: "Medium", date: "Jun 25, 2026", description: "" },
+    { id: "TM-6", title: "API Integration & Testing", assignee: "Trong Nghia", pts: 3, status: "Pending Review", priority: "High", date: "Jul 05, 2026", description: "" },
+    { id: "TM-7", title: "User Feedback UI Refactor", assignee: "Pham Tien", pts: 2, status: "Need Revision", priority: "Low", date: "Jul 10, 2026", description: "" },
+    { id: "TM-8", title: "Database Migration Script", assignee: "Hoang Hoa", pts: 5, status: "New", priority: "High", date: "Jul 12, 2026", description: "" },
+    { id: "TM-9", title: "Dashboard Charts optimization", assignee: "Trong Nghia", pts: 3, status: "In Testing", priority: "Medium", date: "Jul 15, 2026", description: "" },
+    { id: "TM-10", title: "Mobile App Performance Tuning", assignee: "Trong Nghia", pts: 4, status: "In Testing", priority: "Medium", date: "Jul 18, 2026", description: "" },
+    { id: "TM-11", title: "Push Notification Service", assignee: "Hoang Hoa", pts: 3, status: "New", priority: "High", date: "Jul 20, 2026", description: "" },
   ]);
 
   const [selectedAssigneeFilter, setSelectedAssigneeFilter] = useState('All');
@@ -95,6 +113,29 @@ export default function TaskManagement() {
       setTasksForModal(tasks);
     }
   }, [tasks, setTasksForModal]);
+
+  const handleCreateTask = useCallback((taskData) => {
+    setTasks(prev => [
+      ...prev,
+      {
+        id: getNextTaskId(prev),
+        title: taskData.summary,
+        assignee: taskData.assignee === 'Unassigned' ? '' : taskData.assignee,
+        pts: Number(taskData.storyPoints) || 0,
+        status: taskData.status,
+        priority: taskData.priority,
+        date: formatTaskDate(taskData.createdAt),
+        description: taskData.description || ""
+      }
+    ]);
+  }, []);
+
+  useEffect(() => {
+    if (!setCreateTaskHandler) return undefined;
+
+    setCreateTaskHandler(() => handleCreateTask);
+    return () => setCreateTaskHandler(null);
+  }, [handleCreateTask, setCreateTaskHandler]);
  
   // Keep selected task detail in sync with the latest task state
   useEffect(() => {
@@ -561,7 +602,7 @@ export default function TaskManagement() {
                       <th className="px-6 py-3 font-bold">Assignee</th>
                       <th className="px-6 py-3 font-bold text-center">Priority</th>
                       <th className="px-6 py-3 font-bold">Status</th>
-                      <th className="px-6 py-3 font-bold">Due Date</th>
+                      <th className="px-6 py-3 font-bold">Completed</th>
                       <th className="px-6 py-3 font-bold text-center">Actions</th>
                     </tr>
                   </thead>
@@ -1025,7 +1066,7 @@ function TaskCard({ task, index, totalCount, setTasks, onOpenDetail }) {
               ) : priority === 'Medium' ? (
                 <span className="material-symbols-outlined text-orange-500 text-[20px] font-bold">keyboard_double_arrow_up</span>
               ) : (
-                <span className="material-symbols-outlined text-blue-500 text-[20px] font-bold">keyboard_arrow_down</span>
+                <span className="material-symbols-outlined text-[#4C2B74] text-[20px] font-bold">keyboard_arrow_down</span>
               )}
               <button
                 ref={assigneeBtnRef}
@@ -1182,7 +1223,7 @@ function TaskRow({ id, title, assignee, pts, status, date, priority, isSelected,
         ) : priority === 'Medium' ? (
           <span className="material-symbols-outlined text-orange-500 font-bold text-[16px]">keyboard_double_arrow_up</span>
         ) : (
-          <span className="material-symbols-outlined text-blue-500 font-bold text-[16px]">keyboard_arrow_down</span>
+          <span className="material-symbols-outlined text-[#4C2B74] font-bold text-[16px]">keyboard_arrow_down</span>
         )}
       </td>
       <td className="px-4 py-2">

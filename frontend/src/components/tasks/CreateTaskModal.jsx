@@ -2,7 +2,95 @@ import React, { useState, useEffect, useRef } from 'react';
 import '../../styles/CreateTaskModal.css';
 import RichTextEditor from '../tasks/RichTextEditor';
 
-const CreateTaskModal = ({ isOpen, onClose, tasks = [] }) => {
+const monthNames = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
+];
+
+const parseDateValue = (value) => {
+  if (!value) return new Date(2026, 5, 1);
+
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? new Date(2026, 5, 1) : date;
+};
+
+const formatDateValue = (year, month, day) => {
+  return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+};
+
+function CalendarDropdown({ value, onSelect, onClose }) {
+  const initialDate = parseDateValue(value);
+  const [viewDate, setViewDate] = useState(new Date(initialDate.getFullYear(), initialDate.getMonth(), 1));
+  const selectedDate = value ? parseDateValue(value) : null;
+  const viewYear = viewDate.getFullYear();
+  const viewMonth = viewDate.getMonth();
+  const leadingEmptyDays = new Date(viewYear, viewMonth, 1).getDay();
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+
+  const moveCalendar = (monthDelta, yearDelta = 0) => {
+    setViewDate(prev => new Date(prev.getFullYear() + yearDelta, prev.getMonth() + monthDelta, 1));
+  };
+
+  return (
+    <div className="calendar-dropdown-container" onClick={(e) => e.stopPropagation()}>
+      <div className="calendar-header">
+        <div className="flex gap-2">
+          <button type="button" className="calendar-nav-btn" onClick={() => moveCalendar(0, -1)} aria-label="Previous year">
+            <i data-lucide="chevrons-left" className="w-4 h-4"></i>
+          </button>
+          <button type="button" className="calendar-nav-btn" onClick={() => moveCalendar(-1)} aria-label="Previous month">
+            <i data-lucide="chevron-left" className="w-4 h-4"></i>
+          </button>
+        </div>
+        <span className="font-bold text-sm">{monthNames[viewMonth]} {viewYear}</span>
+        <div className="flex gap-2">
+          <button type="button" className="calendar-nav-btn" onClick={() => moveCalendar(1)} aria-label="Next month">
+            <i data-lucide="chevron-right" className="w-4 h-4"></i>
+          </button>
+          <button type="button" className="calendar-nav-btn" onClick={() => moveCalendar(0, 1)} aria-label="Next year">
+            <i data-lucide="chevrons-right" className="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+      <div className="calendar-body">
+        <div className="grid grid-cols-7 text-[11px] font-bold text-gray-500 mb-2">
+          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => <div key={d} className="text-center">{d}</div>)}
+        </div>
+        <div className="grid grid-cols-7 gap-1">
+          {Array.from({ length: leadingEmptyDays }).map((_, i) => (
+            <div key={`empty-${i}`} className="calendar-day empty-day" />
+          ))}
+          {Array.from({ length: daysInMonth }).map((_, i) => {
+            const day = i + 1;
+            const isSelected = selectedDate &&
+              selectedDate.getFullYear() === viewYear &&
+              selectedDate.getMonth() === viewMonth &&
+              selectedDate.getDate() === day;
+
+            return (
+              <button
+                key={day}
+                type="button"
+                className={`calendar-day ${isSelected ? 'selected-day' : ''}`}
+                onClick={() => {
+                  onSelect(formatDateValue(viewYear, viewMonth, day));
+                  onClose();
+                }}
+              >
+                {day}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const CreateTaskModal = ({ isOpen, onClose, tasks = [], onCreateTask, currentRole = 'ADMIN' }) => {
+  const statusOptions = currentRole === 'ADMIN'
+    ? ['New', 'In Progress', 'In Testing', 'Pending Review', 'Need Revision', 'Done', 'Cancelled']
+    : ['New', 'In Progress', 'In Testing', 'Pending Review', 'Need Revision', 'Done'];
   const [formData, setFormData] = useState({
     space: 'Task Management System (SCRUM)',
     status: 'New',
@@ -75,7 +163,10 @@ const CreateTaskModal = ({ isOpen, onClose, tasks = [] }) => {
       setErrors({ summary: 'Summary is required' });
       return;
     }
-    console.log('Task Created:', formData);
+    if (onCreateTask) {
+      onCreateTask(formData);
+    }
+
     if (!formData.createAnother) {
       onClose();
     } else {
@@ -139,7 +230,7 @@ const CreateTaskModal = ({ isOpen, onClose, tasks = [] }) => {
 
               {isStatusOpen && (
                 <div className="status-custom-dropdown">
-                  {['New', 'In Progress', 'In Testing', 'Pending Review', 'Need Revision', 'Done', 'Cancelled'].map(s => (
+                  {statusOptions.map(s => (
                     <div 
                       key={s} 
                       className="status-dropdown-item"
@@ -316,45 +407,11 @@ const CreateTaskModal = ({ isOpen, onClose, tasks = [] }) => {
                   </p>
 
                   {isCreatedAtOpen && (
-                    <div className="calendar-dropdown-container">
-                      <div className="calendar-header">
-                        <div className="flex gap-2">
-                          <i data-lucide="chevrons-left" className="w-4 h-4 cursor-pointer hover:text-primary"></i>
-                          <i data-lucide="chevron-left" className="w-4 h-4 cursor-pointer hover:text-primary"></i>
-                        </div>
-                        <span className="font-bold text-sm">June 2026</span>
-                        <div className="flex gap-2">
-                          <i data-lucide="chevron-right" className="w-4 h-4 cursor-pointer hover:text-primary"></i>
-                          <i data-lucide="chevrons-right" className="w-4 h-4 cursor-pointer hover:text-primary"></i>
-                        </div>
-                      </div>
-                      <div className="calendar-body">
-                        <div className="grid grid-cols-7 text-[11px] font-bold text-gray-500 mb-2">
-                          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => <div key={d} className="text-center">{d}</div>)}
-                        </div>
-                        <div className="grid grid-cols-7 gap-1">
-                          {Array.from({ length: 30 }).map((_, i) => {
-                            const day = i + 1;
-                            const isSelected = day === 25;
-                            return (
-                              <div 
-                                key={i} 
-                                className={`calendar-day ${isSelected ? 'selected-day' : ''}`}
-                                onClick={() => {
-                                  setFormData(prev => ({
-                                    ...prev,
-                                    createdAt: `2026-06-${day.toString().padStart(2, '0')}`
-                                  }));
-                                  setIsCreatedAtOpen(false);
-                                }}
-                              >
-                                {day}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </div>
+                    <CalendarDropdown
+                      value={formData.createdAt}
+                      onSelect={(date) => setFormData(prev => ({ ...prev, createdAt: date }))}
+                      onClose={() => setIsCreatedAtOpen(false)}
+                    />
                   )}
                 </div>
               </div>
@@ -374,45 +431,11 @@ const CreateTaskModal = ({ isOpen, onClose, tasks = [] }) => {
                   </div>
 
                   {isUpdatedAtOpen && (
-                    <div className="calendar-dropdown-container">
-                      <div className="calendar-header">
-                        <div className="flex gap-2">
-                          <i data-lucide="chevrons-left" className="w-4 h-4 cursor-pointer hover:text-primary"></i>
-                          <i data-lucide="chevron-left" className="w-4 h-4 cursor-pointer hover:text-primary"></i>
-                        </div>
-                        <span className="font-bold text-sm">June 2026</span>
-                        <div className="flex gap-2">
-                          <i data-lucide="chevron-right" className="w-4 h-4 cursor-pointer hover:text-primary"></i>
-                          <i data-lucide="chevrons-right" className="w-4 h-4 cursor-pointer hover:text-primary"></i>
-                        </div>
-                      </div>
-                      <div className="calendar-body">
-                        <div className="grid grid-cols-7 text-[11px] font-bold text-gray-500 mb-2">
-                          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => <div key={d} className="text-center">{d}</div>)}
-                        </div>
-                        <div className="grid grid-cols-7 gap-1">
-                          {Array.from({ length: 30 }).map((_, i) => {
-                            const day = i + 1;
-                            const isSelected = day === 25;
-                            return (
-                              <div 
-                                key={i} 
-                                className={`calendar-day ${isSelected ? 'selected-day' : ''}`}
-                                onClick={() => {
-                                  setFormData(prev => ({
-                                    ...prev,
-                                    updated_at: `2026-06-${day.toString().padStart(2, '0')}`
-                                  }));
-                                  setIsUpdatedAtOpen(false);
-                                }}
-                              >
-                                {day}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </div>
+                    <CalendarDropdown
+                      value={formData.updated_at}
+                      onSelect={(date) => setFormData(prev => ({ ...prev, updated_at: date }))}
+                      onClose={() => setIsUpdatedAtOpen(false)}
+                    />
                   )}
                 </div>
               </div>
@@ -436,45 +459,11 @@ const CreateTaskModal = ({ isOpen, onClose, tasks = [] }) => {
                 </div>
 
                 {isCompletedAtOpen && (
-                  <div className="calendar-dropdown-container">
-                    <div className="calendar-header">
-                      <div className="flex gap-2">
-                        <i data-lucide="chevrons-left" className="w-4 h-4 cursor-pointer hover:text-primary"></i>
-                        <i data-lucide="chevron-left" className="w-4 h-4 cursor-pointer hover:text-primary"></i>
-                      </div>
-                      <span className="font-bold text-sm">June 2026</span>
-                      <div className="flex gap-2">
-                        <i data-lucide="chevron-right" className="w-4 h-4 cursor-pointer hover:text-primary"></i>
-                        <i data-lucide="chevrons-right" className="w-4 h-4 cursor-pointer hover:text-primary"></i>
-                      </div>
-                    </div>
-                    <div className="calendar-body">
-                      <div className="grid grid-cols-7 text-[11px] font-bold text-gray-500 mb-2">
-                        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => <div key={d} className="text-center">{d}</div>)}
-                      </div>
-                      <div className="grid grid-cols-7 gap-1">
-                        {Array.from({ length: 30 }).map((_, i) => {
-                          const day = i + 1;
-                          const isSelected = day === 25;
-                          return (
-                            <div 
-                              key={i} 
-                              className={`calendar-day ${isSelected ? 'selected-day' : ''}`}
-                              onClick={() => {
-                                setFormData(prev => ({
-                                  ...prev,
-                                  completed_at: `2026-06-${day.toString().padStart(2, '0')}`
-                                }));
-                                setIsCompletedAtOpen(false);
-                              }}
-                            >
-                              {day}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
+                  <CalendarDropdown
+                    value={formData.completed_at}
+                    onSelect={(date) => setFormData(prev => ({ ...prev, completed_at: date }))}
+                    onClose={() => setIsCompletedAtOpen(false)}
+                  />
                 )}
               </div>
             </div>
