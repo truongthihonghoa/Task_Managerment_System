@@ -162,7 +162,7 @@ export default function MainLayout() {
   const isUsersActive = location.pathname === '/dashboard/users';
   const isProfileActive = location.pathname === '/dashboard/profile';
   const isNotificationsActive = location.pathname === '/dashboard/notifications';
-  const isSettingsActive = location.pathname === '/dashboard/notification-settings';
+  const isSettingsActive = location.pathname === '/dashboard/notification-settings' || location.pathname === '/dashboard/settings/general';
   const isHelpActive = location.pathname === '/dashboard/help';
 
   // Handlers for AvatarDropdown actions
@@ -172,6 +172,16 @@ export default function MainLayout() {
   };
 
   const handleSettingsClick = () => {
+    navigate(`/dashboard/notification-settings${location.search}`);
+    setShowAvatarDropdown(false); // Close dropdown after navigation
+  };
+
+  const handleGeneralClick = () => {
+    navigate(`/dashboard/settings/general${location.search}`);
+    setShowAvatarDropdown(false); // Close dropdown after navigation
+  };
+
+  const handleNotificationClick = () => {
     navigate(`/dashboard/notification-settings${location.search}`);
     setShowAvatarDropdown(false); // Close dropdown after navigation
   };
@@ -439,6 +449,8 @@ export default function MainLayout() {
                         onClose={() => setShowAvatarDropdown(false)}
                         onProfileClick={handleProfileClick}
                         onSettingsClick={handleSettingsClick}
+                        onGeneralClick={handleGeneralClick}
+                        onNotificationClick={handleNotificationClick}
                         onLogoutClick={handleLogoutClick}
                     />
                 </div>
