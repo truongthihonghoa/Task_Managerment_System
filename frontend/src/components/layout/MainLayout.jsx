@@ -151,7 +151,7 @@ export default function MainLayout() {
   const isProfileActive = location.pathname === '/dashboard/profile';
   const isNotificationsActive = location.pathname === '/dashboard/notifications';
   const isSettingsActive = location.pathname === '/dashboard/notification-settings';
-
+  const isHelpActive = location.pathname === '/dashboard/help';
 
   return (
     <div className="h-screen flex overflow-hidden font-['Inter'] bg-[#F5F7FA]">
@@ -386,9 +386,12 @@ export default function MainLayout() {
         </header>
         {/* END: MainHeader */}
 
-        {/* BEGIN: MainContentArea */}
         <main className="flex-1 bg-[#F5F7FA] overflow-y-auto relative" data-purpose="main-display">
-          <Outlet context={{ setShowCreateModal, setTasksForModal }} />
+          {isHelpActive ? (
+            <HelpCenter />
+          ) : (
+            <Outlet context={{ setShowCreateModal, setTasksForModal }} />
+          )}
         </main>
         {/* END: MainContentArea */}
 
