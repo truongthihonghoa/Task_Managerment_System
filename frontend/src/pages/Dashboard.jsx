@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 
 
@@ -77,74 +78,404 @@ const userActivities = [
 
 const adminActivities = [
   {
-    user: "System Admin",
-    initials: "SA",
-    avatarColor: "#170338",
+    user: "John Doe",
+    initials: "JD",
+    avatarColor: "#3525cd",
     textColor: "white",
-    action: "created new user",
-    status: "Authentication",
-    statusColor: "bg-purple-50 text-purple-700 border-purple-100",
-    target: "Lê Văn Tám",
+    action: "created user",
+    status: "USER",
+    statusColor: "bg-blue-50 text-blue-700 border-blue-100",
+    target: "UID-9902",
     time: "2026-06-25 09:15:00",
     entityType: "User",
-    ipAddress: "10.0.0.12",
+    ipAddress: "192.168.1.45",
     group: "Today"
   },
   {
-    user: "Phạm Thị Cẩm Tiên",
-    initials: "PT",
-    avatarColor: "#ff4d4d",
+    user: "Sarah Lee",
+    initials: "SL",
+    avatarColor: "#ff0080",
     textColor: "white",
-    action: "updated status to",
-    status: "in_progress",
+    action: "updated task",
+    status: "TASK",
+    statusColor: "bg-teal-50 text-teal-700 border-teal-100",
+    target: "TSK-5541",
+    time: "2026-06-25 09:10:00",
+    entityType: "Task",
+    ipAddress: "10.0.4.12",
+    group: "Today"
+  },
+  {
+    user: "System Bot",
+    initials: "SB",
+    avatarColor: "#4648d4",
+    textColor: "white",
+    action: "refreshed token",
+    status: "TOKEN",
+    statusColor: "bg-slate-100 text-slate-700 border-slate-200",
+    target: "TOK-REF-8",
+    time: "2026-06-25 09:02:00",
+    entityType: "Token",
+    ipAddress: "Internal",
+    group: "Today"
+  },
+  {
+    user: "Emma Wilson",
+    initials: "EW",
+    avatarColor: "#a44100",
+    textColor: "white",
+    action: "uploaded file",
+    status: "ATTACHMENT",
     statusColor: "bg-blue-50 text-blue-700 border-blue-100",
-    target: "SCRUM-44: API Documentation",
-    time: "2026-06-25 07:30:00",
-    entityType: "Task",
-    ipAddress: "192.168.1.102",
-    group: "Today"
-  },
-  {
-    user: "Trang Nguyễn",
-    initials: "TN",
-    avatarColor: "#10b981",
-    textColor: "white",
-    action: "deleted task",
-    status: "cancelled",
-    statusColor: "bg-red-50 text-red-700 border-red-100",
-    target: "SCRUM-99: Dummy Task",
-    time: "2026-06-25 05:20:00",
-    entityType: "Task",
-    ipAddress: "192.168.1.15",
-    group: "Today"
-  },
-  {
-    user: "System",
-    initials: "SYS",
-    avatarColor: "#d1d5db",
-    textColor: "#374151",
-    action: "archived task",
-    status: "done",
-    statusColor: "bg-gray-100 text-gray-700 border-gray-200",
-    target: "Security Audit 2025",
-    time: "2026-06-24 14:00:00",
-    entityType: "Task",
-    ipAddress: "127.0.0.1",
+    target: "invoice_q1_final.pdf",
+    time: "2026-06-25 08:58:00",
+    entityType: "Attachment",
+    ipAddress: "45.78.90.12",
     group: "Yesterday"
   },
   {
-    user: "Admin",
-    initials: "AD",
-    avatarColor: "#4C2B74",
+    user: "Michael Chen",
+    initials: "MC",
+    avatarColor: "#718096",
     textColor: "white",
-    action: "changed role on",
-    status: "Verification",
-    statusColor: "bg-orange-50 text-orange-700 border-orange-100",
-    target: "Nguyễn Văn A (to Manager)",
-    time: "2026-06-24 10:10:00",
+    action: "performed session login",
+    status: "SESSION",
+    statusColor: "bg-slate-100 text-slate-700 border-slate-200",
+    target: "Chrome / MacOS",
+    time: "2026-06-25 08:45:00",
+    entityType: "Session",
+    ipAddress: "172.16.0.8",
+    group: "Yesterday"
+  },
+  {
+    user: "John Doe",
+    initials: "JD",
+    avatarColor: "#3525cd",
+    textColor: "white",
+    action: "created user",
+    status: "USER",
+    statusColor: "bg-blue-50 text-blue-700 border-blue-100",
+    target: "UID-9903",
+    time: "2026-06-24 16:30:00",
     entityType: "User",
-    ipAddress: "10.0.0.1",
+    ipAddress: "192.168.1.45",
     group: "Yesterday"
+  },
+  {
+    user: "Sarah Lee",
+    initials: "SL",
+    avatarColor: "#ff0080",
+    textColor: "white",
+    action: "deleted comment",
+    status: "COMMENT",
+    statusColor: "bg-red-50 text-red-700 border-red-100",
+    target: "COM-104",
+    time: "2026-06-23 11:24:00",
+    entityType: "Comment",
+    ipAddress: "10.0.4.12",
+    group: "Yesterday"
+  },
+  {
+    user: "Emma Wilson",
+    initials: "EW",
+    avatarColor: "#a44100",
+    textColor: "white",
+    action: "updated task",
+    status: "TASK",
+    statusColor: "bg-teal-50 text-teal-700 border-teal-100",
+    target: "TSK-2291",
+    time: "2026-06-20 14:15:00",
+    entityType: "Task",
+    ipAddress: "45.78.90.12",
+    group: "Yesterday"
+  },
+  {
+    user: "Michael Chen",
+    initials: "MC",
+    avatarColor: "#718096",
+    textColor: "white",
+    action: "performed session login",
+    status: "SESSION",
+    statusColor: "bg-slate-100 text-slate-700 border-slate-200",
+    target: "Safari / iOS",
+    time: "2026-06-18 07:12:00",
+    entityType: "Session",
+    ipAddress: "172.16.0.8",
+    group: "Yesterday"
+  },
+  {
+    user: "John Doe",
+    initials: "JD",
+    avatarColor: "#3525cd",
+    textColor: "white",
+    action: "updated task",
+    status: "TASK",
+    statusColor: "bg-teal-50 text-teal-700 border-teal-100",
+    target: "TSK-3382",
+    time: "2026-06-15 10:00:00",
+    entityType: "Task",
+    ipAddress: "192.168.1.45",
+    group: "Yesterday"
+  }
+];
+
+const auditLogsData = [
+  {
+    id: "AL-02340",
+    user: "John Doe",
+    initials: "JD",
+    avatarBg: "#3525cd",
+    role: "Admin",
+    event: "Created User",
+    entityType: "User",
+    object: "UID-9902",
+    createdAt: "2026-06-25 09:15:00",
+    ipAddress: "192.168.1.45",
+    payload: {
+      log_id: "AL-02340",
+      user_id: "USR-102",
+      action: "CREATE_USER",
+      entity_type: "USER",
+      entity_id: "UID-9902",
+      payload: {
+        email: "new.user@example.com",
+        role: "Admin",
+        status: "active"
+      },
+      ip_address: "192.168.1.45",
+      created_at: "2026-06-25 09:15:00"
+    }
+  },
+  {
+    id: "AL-02341",
+    user: "Sarah Lee",
+    initials: "SL",
+    avatarBg: "#ff0080",
+    role: "User",
+    event: "Updated Task",
+    entityType: "Task",
+    object: "TSK-5541",
+    createdAt: "2026-06-25 09:10:00",
+    ipAddress: "10.0.4.12",
+    payload: {
+      log_id: "AL-02341",
+      user_id: "USR-105",
+      action: "UPDATE_TASK",
+      entity_type: "TASK",
+      entity_id: "TSK-5541",
+      payload: {
+        title: "API Documentation",
+        status: "in_progress",
+        priority: "High"
+      },
+      ip_address: "10.0.4.12",
+      created_at: "2026-06-25 09:10:00"
+    }
+  },
+  {
+    id: "AL-02342",
+    user: "System Bot",
+    initials: "SB",
+    avatarBg: "#4648d4",
+    role: "User",
+    event: "Refreshed Token",
+    entityType: "Token",
+    object: "TOK-REF-8",
+    createdAt: "2026-06-25 09:02:00",
+    ipAddress: "Internal",
+    payload: {
+      log_id: "AL-02342",
+      user_id: "SYS-BOT",
+      action: "REFRESH_TOKEN",
+      entity_type: "TOKEN",
+      entity_id: "TOK-REF-8",
+      payload: {
+        token_type: "refresh",
+        status: "success"
+      },
+      ip_address: "Internal",
+      created_at: "2026-06-25 09:02:00"
+    }
+  },
+  {
+    id: "AL-02343",
+    user: "Emma Wilson",
+    initials: "EW",
+    avatarBg: "#a44100",
+    role: "User",
+    event: "Uploaded File",
+    entityType: "Attachment",
+    object: "invoice_q1_final.pdf",
+    createdAt: "2026-06-25 08:58:00",
+    ipAddress: "45.78.90.12",
+    payload: {
+      log_id: "AL-02343",
+      user_id: "USR-108",
+      action: "UPLOAD_FILE",
+      entity_type: "ATTACHMENT",
+      entity_id: "ATT-992",
+      payload: {
+        file_name: "invoice_q1_final.pdf",
+        size: "2.4 MB",
+        mime_type: "application/pdf"
+      },
+      ip_address: "45.78.90.12",
+      created_at: "2026-06-25 08:58:00"
+    }
+  },
+  {
+    id: "AL-02344",
+    user: "Michael Chen",
+    initials: "MC",
+    avatarBg: "#777587",
+    role: "User",
+    event: "Session Login",
+    entityType: "Session",
+    object: "Chrome / MacOS",
+    createdAt: "2026-06-25 08:45:00",
+    ipAddress: "172.16.0.8",
+    payload: {
+      log_id: "AL-02344",
+      user_id: "USR-112",
+      action: "SESSION_LOGIN",
+      entity_type: "SESSION",
+      entity_id: "SES-883",
+      payload: {
+        browser: "Chrome",
+        os: "MacOS",
+        device: "Desktop"
+      },
+      ip_address: "172.16.0.8",
+      created_at: "2026-06-25 08:45:00"
+    }
+  },
+  {
+    id: "AL-02345",
+    user: "John Doe",
+    initials: "JD",
+    avatarBg: "#3525cd",
+    role: "Admin",
+    event: "Create User",
+    entityType: "User",
+    object: "UID-9903",
+    createdAt: "2026-06-24 16:30:00",
+    ipAddress: "192.168.1.45",
+    payload: {
+      log_id: "AL-02345",
+      user_id: "USR-102",
+      action: "CREATE_USER",
+      entity_type: "USER",
+      entity_id: "UID-9903",
+      payload: {
+        email: "another.user@example.com",
+        role: "User",
+        status: "active"
+      },
+      ip_address: "192.168.1.45",
+      created_at: "2026-06-24 16:30:00"
+    }
+  },
+  {
+    id: "AL-02346",
+    user: "Sarah Lee",
+    initials: "SL",
+    avatarBg: "#ff0080",
+    role: "User",
+    event: "Delete Comment",
+    entityType: "Comment",
+    object: "COM-104",
+    createdAt: "2026-06-23 11:24:00",
+    ipAddress: "10.0.4.12",
+    payload: {
+      log_id: "AL-02346",
+      user_id: "USR-105",
+      action: "DELETE_COMMENT",
+      entity_type: "COMMENT",
+      entity_id: "COM-104",
+      payload: {
+        comment_id: "COM-104",
+        task_id: "TSK-5541",
+        author: "Sarah Lee"
+      },
+      ip_address: "10.0.4.12",
+      created_at: "2026-06-23 11:24:00"
+    }
+  },
+  {
+    id: "AL-02347",
+    user: "Emma Wilson",
+    initials: "EW",
+    avatarBg: "#a44100",
+    role: "User",
+    event: "Update Task",
+    entityType: "Task",
+    object: "TSK-2291",
+    createdAt: "2026-06-20 14:15:00",
+    ipAddress: "45.78.90.12",
+    payload: {
+      log_id: "AL-02347",
+      user_id: "USR-108",
+      action: "UPDATE_TASK",
+      entity_type: "TASK",
+      entity_id: "TSK-2291",
+      payload: {
+        title: "Database Migration",
+        status: "done"
+      },
+      ip_address: "45.78.90.12",
+      created_at: "2026-06-20 14:15:00"
+    }
+  },
+  {
+    id: "AL-02348",
+    user: "Michael Chen",
+    initials: "MC",
+    avatarBg: "#777587",
+    role: "User",
+    event: "Session Login",
+    entityType: "Session",
+    object: "Safari / iOS",
+    createdAt: "2026-06-18 07:12:00",
+    ipAddress: "172.16.0.8",
+    payload: {
+      log_id: "AL-02348",
+      user_id: "USR-112",
+      action: "SESSION_LOGIN",
+      entity_type: "SESSION",
+      entity_id: "SES-884",
+      payload: {
+        browser: "Safari",
+        os: "iOS",
+        device: "Mobile"
+      },
+      ip_address: "172.16.0.8",
+      created_at: "2026-06-18 07:12:00"
+    }
+  },
+  {
+    id: "AL-02349",
+    user: "John Doe",
+    initials: "JD",
+    avatarBg: "#3525cd",
+    role: "Admin",
+    event: "Update Task",
+    entityType: "Task",
+    object: "TSK-3382",
+    createdAt: "2026-06-15 10:00:00",
+    ipAddress: "192.168.1.45",
+    payload: {
+      log_id: "AL-02349",
+      user_id: "USR-102",
+      action: "UPDATE_TASK",
+      entity_type: "TASK",
+      entity_id: "TSK-3382",
+      payload: {
+        title: "Refactor Auth Middleware",
+        status: "in_review"
+      },
+      ip_address: "192.168.1.45",
+      created_at: "2026-06-15 10:00:00"
+    }
   }
 ];
 
@@ -399,13 +730,20 @@ const Dashboard = () => {
   // Modal specific filters
   const [modalSearch, setModalSearch] = useState("");
   const [modalEventType, setModalEventType] = useState("All Events");
-  const [modalTimeRange, setModalTimeRange] = useState("Today");
+  const [modalTimeRange, setModalTimeRange] = useState("Last 7 days");
   const [modalSortOrder, setModalSortOrder] = useState("Newest First");
   const [selectedOperation, setSelectedOperation] = useState("User Management");
   const [showStatusFilter, setShowStatusFilter] = useState(false);
   const [showDateFilter, setShowDateFilter] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState("All Status");
   const [selectedDate, setSelectedDate] = useState("All Dates");
+
+  // Custom Audit Logs specific states
+  const [modalEntityType, setModalEntityType] = useState("All Entities");
+  const [modalRowsPerPage, setModalRowsPerPage] = useState(25);
+  const [modalPage, setModalPage] = useState(1);
+  const [expandedLogId, setExpandedLogId] = useState(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
 
   // Define tabs based on role
@@ -472,6 +810,67 @@ const Dashboard = () => {
   }).sort((a, b) => {
     return modalSortOrder === "Newest First" ? b.time.localeCompare(a.time) : a.time.localeCompare(b.time);
   });
+
+  // Custom Audit Logs Filtering & Sorting Logic
+  const filteredAuditLogs = auditLogsData.filter(log => {
+    // 1. Search text filter
+    const normalizedSearch = modalSearch.toLowerCase();
+    const matchSearch = !modalSearch ||
+      log.user.toLowerCase().includes(normalizedSearch) ||
+      log.event.toLowerCase().includes(normalizedSearch) ||
+      log.id.toLowerCase().includes(normalizedSearch);
+
+    // 2. Date Range filter
+    let matchDate = true;
+    if (modalTimeRange === "Today") {
+      matchDate = log.createdAt.startsWith("2026-06-25");
+    } else if (modalTimeRange === "Yesterday") {
+      matchDate = log.createdAt.startsWith("2026-06-24");
+    } else if (modalTimeRange === "Last 7 days") {
+      const dateVal = new Date(log.createdAt.replace(' ', 'T')).getTime();
+      const cutoff = new Date("2026-06-18T00:00:00").getTime();
+      matchDate = dateVal >= cutoff;
+    } else if (modalTimeRange === "Last 30 days") {
+      const dateVal = new Date(log.createdAt.replace(' ', 'T')).getTime();
+      const cutoff = new Date("2026-05-26T00:00:00").getTime();
+      matchDate = dateVal >= cutoff;
+    }
+
+    // 3. Event Type filter
+    let matchEvent = true;
+    if (modalEventType !== "All Events") {
+      const opt = modalEventType.toLowerCase().replace(' ', '');
+      const ev = log.event.toLowerCase().replace(' ', '');
+      matchEvent = ev === opt || log.event.toLowerCase() === modalEventType.toLowerCase();
+    }
+
+    // 4. Entity Type filter
+    let matchEntity = true;
+    if (modalEntityType !== "All Entities") {
+      matchEntity = log.entityType.toLowerCase() === modalEntityType.toLowerCase();
+    }
+
+    return matchSearch && matchDate && matchEvent && matchEntity;
+  }).sort((a, b) => {
+    if (modalSortOrder === "Newest First") {
+      return b.createdAt.localeCompare(a.createdAt);
+    } else if (modalSortOrder === "Oldest First") {
+      return a.createdAt.localeCompare(b.createdAt);
+    } else if (modalSortOrder === "User A-Z") {
+      return a.user.localeCompare(b.user);
+    } else if (modalSortOrder === "Action A-Z") {
+      return a.event.localeCompare(b.event);
+    }
+    return 0;
+  });
+
+  // Pagination calculations
+  const totalAuditLogs = filteredAuditLogs.length;
+  const maxAuditPages = Math.max(1, Math.ceil(totalAuditLogs / modalRowsPerPage));
+  const currentAuditPage = Math.min(modalPage, maxAuditPages);
+  const auditStartIndex = (currentAuditPage - 1) * modalRowsPerPage;
+  const auditEndIndex = Math.min(auditStartIndex + modalRowsPerPage, totalAuditLogs);
+  const paginatedAuditLogs = filteredAuditLogs.slice(auditStartIndex, auditEndIndex);
 
   return (
     <div className="flex-1 overflow-y-auto px-6 pt-4 pb-6 md:px-8 md:pt-5 md:pb-8 space-y-6 custom-scrollbar bg-[#FAFBFF]">
@@ -541,7 +940,8 @@ const Dashboard = () => {
         }
 
         .custom-scrollbar::-webkit-scrollbar {
-          width: 5px;
+          width: 4px;
+          height: 4px;
         }
 
         .custom-scrollbar::-webkit-scrollbar-track {
@@ -549,7 +949,7 @@ const Dashboard = () => {
         }
 
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #e2e8f0;
+          background: #cdd5deff;
           border-radius: 10px;
         }
 
@@ -571,111 +971,335 @@ const Dashboard = () => {
           -ms-overflow-style: none;
           scrollbar-width: none;
         }
+
+        /* Audit Log Styles */
+        .mb-stack-lg { margin-bottom: 1.5rem; }
+        .py-stack-lg { padding-top: 1.5rem; padding-bottom: 1.5rem; }
+        .gap-stack-lg { gap: 1.5rem; }
+        .px-margin-page { padding-left: 2rem; padding-right: 2rem; }
+        .max-w-container-max { max-width: 1440px; }
+        
+        /* Font styles */
+        .font-headline-md { font-family: 'Inter', sans-serif; font-size: 24px; font-weight: 600; line-height: 32px; letter-spacing: -0.01em; }
+        .font-body-md { font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 400; line-height: 20px; }
+        .font-body-sm { font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 400; line-height: 18px; }
+        .font-label-sm { font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600; line-height: 16px; letter-spacing: 0.05em; }
+        .font-label-md { font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 500; line-height: 20px; }
+        
+        /* Border and Colors */
+        .border-outline-variant { border: 1px solid #c7c4d8; }
+        .border-r-outline-variant { border-right: 1px solid #c7c4d8; }
+        .border-b-outline-variant { border-bottom: 1px solid #c7c4d8; }
+        .bg-surface-container-low { background-color: #f5f2ff; }
+        .bg-surface-container-lowest { background-color: #ffffff; }
+        .text-on-surface-variant { color: #464555; }
+        
+        .divide-outline-variant\/30 > :not([hidden]) ~ :not([hidden]) {
+          border-color: rgba(199, 196, 216, 0.3);
+        }
+        
+        th.border-r, td.border-r {
+          border-right-width: 1px;
+          border-right-color: #c7c4d8;
+        }
+
+        .table-row-hover:hover {
+          background-color: rgba(245, 242, 255, 0.4);
+        }
       `}</style>
 
       {/* Activity Modal / Audit Log Table */}
-      {isActivityModalOpen && (
+      {isActivityModalOpen && createPortal(
         <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 sm:p-6 bg-[#170338]/40 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className={`bg-white w-full ${isAdmin ? 'max-w-6xl' : 'max-w-2xl'} rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-300`}>
-            <div className="p-8 border-b border-gray-100 flex items-center justify-between bg-white sticky top-0 z-10">
-              <div>
-                <h3 className="text-2xl font-black text-[#170338] tracking-tight">Recent Activity</h3>
-                <p className="text-sm text-[#5e636e] font-medium mt-1 opacity-90">
-                  Stay up to date with what's happening across the space.
-                </p>
+          {isAdmin ? (
+            <div className="bg-white w-full max-w-[1240px] rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-300 relative">
+              {/* TOP CLOSE BUTTON */}
+              <div className="absolute top-6 right-6 z-50">
+                <button
+                  type="button"
+                  onClick={() => setIsActivityModalOpen(false)}
+                  className="w-10 h-10 rounded-xl hover:bg-slate-200 flex items-center justify-center text-slate-500 transition-colors cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[24px]">close</span>
+                </button>
               </div>
-              <button
-                onClick={() => setIsActivityModalOpen(false)}
-                className="w-10 h-10 rounded-xl hover:bg-gray-100 flex items-center justify-center text-[#5e636e] transition-colors"
-              >
-                <span className="material-symbols-outlined">close</span>
-              </button>
-            </div>
 
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-8 pt-6">
-              {isAdmin && (
-                <div className="mb-8 grid grid-cols-1 sm:grid-cols-4 gap-4">
-                  <div className="relative group">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-gray-400 text-lg group-focus-within:text-[#4C2B74]">search</span>
-                    <input
-                      type="text"
-                      placeholder="Search (User, Action, ID)..."
-                      value={modalSearch}
-                      onChange={(e) => setModalSearch(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-100 bg-gray-50 focus:bg-white focus:border-[#4C2B74] focus:ring-4 focus:ring-purple-50 outline-none transition-all text-sm font-medium"
-                    />
+              {/* MAIN CONTENT */}
+              <div className="flex-1 flex flex-col overflow-hidden p-5 lg:p-6">
+                {/* Header & Description */}
+                <div className="mb-4 pr-12">
+                  <h2 className="font-headline-md text-on-surface font-bold text-[30px] text-black">Audit Logs</h2>
+                  <p className="font-body-md text-on-surface-variant mt-1">Stay up to date with what's happening across the space.</p>
+                </div>
+
+                {/* Filter & Search Section */}
+                <section className="border border-outline-variant rounded-xl p-4 mb-4 shadow-sm bg-slate-100 lg:p-5">
+                  <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-end justify-between">
+                    {/* Search Bar */}
+                    <div className="w-full flex flex-col gap-1 flex-grow">
+                      <label className="font-label-sm px-1 text-black font-bold">Search Logs</label>
+                      <div className="relative group">
+                        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline transition-colors group-focus-within:text-[#0052CC]">search</span>
+                        <input
+                          value={modalSearch}
+                          onChange={(e) => { setModalSearch(e.target.value); setModalPage(1); }}
+                          type="text"
+                          placeholder="Search by User, Action, or Log ID..."
+                          className="w-full pl-10 pr-4 py-2 bg-white border border-outline-variant rounded-lg focus:border-slate-600 focus:ring-0 transition-all font-body-md"
+                        />
+                      </div>
+                    </div>
+                    {/* Refresh Button */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsRefreshing(true);
+                        setModalSearch("");
+                        setModalEventType("All Events");
+                        setModalTimeRange("Last 7 days");
+                        setModalSortOrder("Newest First");
+                        setModalEntityType("All Entities");
+                        setModalPage(1);
+                        setTimeout(() => setIsRefreshing(false), 500);
+                      }}
+                      className="flex items-center justify-center gap-2 px-5 py-2 text-white rounded-lg active:scale-[0.98] transition-all font-label-md shadow-sm w-full lg:w-auto bg-[#2D1B4E] hover:bg-[#2D1B4E]/90 cursor-pointer"
+                    >
+                      <span className={`material-symbols-outlined text-[20px] ${isRefreshing ? 'animate-spin' : ''}`}>refresh</span>
+                      Refresh
+                    </button>
                   </div>
-                  <select
-                    value={modalEventType}
-                    onChange={(e) => setModalEventType(e.target.value)}
-                    className="px-4 py-2.5 rounded-xl border border-gray-100 bg-gray-50 focus:bg-white focus:border-[#4C2B74] outline-none transition-all text-sm font-medium"
-                  >
-                    <option>All Events</option>
-                    <option>User</option>
-                    <option>Task</option>
-                    <option>Comment</option>
-                    <option>Attachment</option>
-                    <option>Notification</option>
-                    <option>Authentication</option>
-                    <option>Verification</option>
-                  </select>
-                  <select
-                    value={modalTimeRange}
-                    onChange={(e) => setModalTimeRange(e.target.value)}
-                    className="px-4 py-2.5 rounded-xl border border-gray-100 bg-gray-50 focus:bg-white focus:border-[#4C2B74] outline-none transition-all text-sm font-medium"
-                  >
-                    <option>Today</option>
-                    <option>Yesterday</option>
-                    <option>All Time</option>
-                  </select>
-                  <select
-                    value={modalSortOrder}
-                    onChange={(e) => setModalSortOrder(e.target.value)}
-                    className="px-4 py-2.5 rounded-xl border border-gray-100 bg-gray-50 focus:bg-white focus:border-[#4C2B74] outline-none transition-all text-sm font-medium"
-                  >
-                    <option>Newest First</option>
-                    <option>Oldest First</option>
-                  </select>
-                </div>
-              )}
 
-              {isAdmin ? (
-                <div className="overflow-x-auto border border-gray-100 rounded-2xl">
-                  <table className="w-full text-left border-collapse">
-                    <thead className="bg-gray-50 border-b border-gray-100">
-                      <tr>
-                        <th className="px-6 py-4 text-[11px] font-black text-[#5e636e] uppercase tracking-wider">Timestamp</th>
-                        <th className="px-6 py-4 text-[11px] font-black text-[#5e636e] uppercase tracking-wider">User</th>
-                        <th className="px-6 py-4 text-[11px] font-black text-[#5e636e] uppercase tracking-wider">Action</th>
-                        <th className="px-6 py-4 text-[11px] font-black text-[#5e636e] uppercase tracking-wider">Entity Type</th>
-                        <th className="px-6 py-4 text-[11px] font-black text-[#5e636e] uppercase tracking-wider">Target</th>
-                        <th className="px-6 py-4 text-[11px] font-black text-[#5e636e] uppercase tracking-wider">IP Address</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-50">
-                      {filteredModalActivities.map((log, i) => (
-                        <tr key={i} className={`hover:bg-gray-50 transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/20'}`}>
-                          <td className="px-6 py-4 text-xs font-semibold text-[#5e636e] whitespace-nowrap">{log.time}</td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-sm" style={{ backgroundColor: log.avatarColor }}>{log.initials}</div>
-                              <span className="text-sm font-bold text-[#170338]">{log.user}</span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 text-xs font-bold text-[#4C2B74]">{log.action || "audit_logs.action"}</td>
-                          <td className="px-6 py-4">
-                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-black border uppercase tracking-wider ${log.entityType === 'User' ? 'bg-purple-50 text-purple-700 border-purple-100' : 'bg-blue-50 text-blue-700 border-blue-100'}`}>
-                              {log.entityType || "audit_logs.entity_type"}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 text-xs font-bold text-[#170338]">{log.target}</td>
-                          <td className="px-6 py-4 text-xs font-mono text-[#5e636e] font-medium">{log.ipAddress || "audit_logs.ip_address"}</td>
+                  {/* Secondary Filters */}
+                  <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-4 lg:grid-cols-4">
+                    {/* Date Range Filter */}
+                    <div className="flex flex-col gap-1">
+                      <label className="font-label-sm px-1 text-black font-bold">Date Range</label>
+                      <div className="relative">
+                        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px] pointer-events-none">calendar_today</span>
+                        <select
+                          value={modalTimeRange}
+                          onChange={(e) => { setModalTimeRange(e.target.value); setModalPage(1); }}
+                          className="w-full appearance-none bg-white border border-outline-variant rounded-lg py-2 pl-10 pr-10 font-body-md focus:border-slate-600 focus:ring-0 transition-all cursor-pointer hover:bg-slate-100"
+                        >
+                          <option value="Last 7 days">Last 7 days</option>
+                          <option value="Today">Today</option>
+                          <option value="Yesterday">Yesterday</option>
+                          <option value="Last 30 days">Last 30 days</option>
+                        </select>
+                        <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px] pointer-events-none">expand_more</span>
+                      </div>
+                    </div>
+                    {/* Event Filter */}
+                    <div className="flex flex-col gap-1">
+                      <label className="font-label-sm px-1 text-black font-bold">Event Type</label>
+                      <div className="relative">
+                        <select
+                          value={modalEventType}
+                          onChange={(e) => { setModalEventType(e.target.value); setModalPage(1); }}
+                          className="w-full appearance-none bg-white border border-outline-variant rounded-lg py-2 pl-4 pr-10 font-body-md focus:border-slate-600 focus:ring-0 transition-all cursor-pointer hover:bg-slate-100"
+                        >
+                          <option value="All Events">All Events</option>
+                          <option value="Created User">Create User</option>
+                          <option value="Updated Task">Update Task</option>
+                          <option value="Delete Comment">Delete Comment</option>
+                          <option value="Uploaded File">File Attachment</option>
+                          <option value="Session Login">Session Login</option>
+                        </select>
+                        <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px] pointer-events-none">expand_more</span>
+                      </div>
+                    </div>
+                    {/* Entity Filter */}
+                    <div className="flex flex-col gap-1">
+                      <label className="font-label-sm px-1 text-black font-bold">Entity Type</label>
+                      <div className="relative">
+                        <select
+                          value={modalEntityType}
+                          onChange={(e) => { setModalEntityType(e.target.value); setModalPage(1); }}
+                          className="w-full appearance-none bg-white border border-outline-variant rounded-lg py-2 pl-4 pr-10 font-body-md focus:border-slate-600 focus:ring-0 transition-all cursor-pointer hover:bg-slate-100"
+                        >
+                          <option value="All Entities">All Entities</option>
+                          <option value="User">User</option>
+                          <option value="Task">Task</option>
+                          <option value="Comment">Comment</option>
+                          <option value="Token">Token</option>
+                          <option value="Attachment">Attachment</option>
+                          <option value="Session">Session</option>
+                        </select>
+                        <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px] pointer-events-none">expand_more</span>
+                      </div>
+                    </div>
+                    {/* Sort Filter */}
+                    <div className="flex flex-col gap-1">
+                      <label className="font-label-sm px-1 text-black font-bold">Sort Order</label>
+                      <div className="relative">
+                        <select
+                          value={modalSortOrder}
+                          onChange={(e) => { setModalSortOrder(e.target.value); setModalPage(1); }}
+                          className="w-full appearance-none bg-white border border-outline-variant rounded-lg py-2 pl-4 pr-10 font-body-md focus:border-slate-600 focus:ring-0 transition-all cursor-pointer hover:bg-slate-100"
+                        >
+                          <option value="Newest First">Newest First</option>
+                          <option value="Oldest First">Oldest First</option>
+                          <option value="User A-Z">User A-Z</option>
+                          <option value="Action A-Z">Action A-Z</option>
+                        </select>
+                        <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px] pointer-events-none">expand_more</span>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                {/* Audit Table Section */}
+                <section className="border border-outline-variant rounded-xl overflow-hidden shadow-sm flex flex-col bg-white flex-1 min-h-0">
+                  <div className="flex-1 overflow-auto relative custom-scrollbar">
+                    <table className="w-full text-left border-collapse min-w-[1000px]">
+                      <thead className="border-b border-outline-variant sticky top-0 z-20 bg-slate-200">
+                        <tr>
+                          <th className="px-6 py-2 pb-2.5 font-label-sm tracking-wider uppercase whitespace-nowrap text-black font-bold border-r text-center">ID</th>
+                          <th className="px-6 py-2 pb-2.5 font-label-sm tracking-wider uppercase whitespace-nowrap text-black font-bold border-r text-center">User</th>
+                          <th className="px-6 py-2 pb-2.5 font-label-sm tracking-wider uppercase whitespace-nowrap text-black font-bold border-r text-center">Role</th>
+                          <th className="px-6 py-2 pb-2.5 font-label-sm tracking-wider uppercase whitespace-nowrap text-black font-bold border-r text-center">Event</th>
+                          <th className="px-6 py-2 pb-2.5 font-label-sm tracking-wider uppercase whitespace-nowrap text-black font-bold border-r text-center">Entity Type</th>
+                          <th className="px-6 py-2 pb-2.5 font-label-sm tracking-wider uppercase whitespace-nowrap text-black font-bold border-r text-center">Object</th>
+                          <th className="px-6 py-2 pb-2.5 font-label-sm tracking-wider uppercase whitespace-nowrap text-black font-bold border-r text-center">CREATED AT</th>
+                          <th className="px-6 py-2 pb-2.5 font-label-sm tracking-wider uppercase whitespace-nowrap text-black font-bold border-r text-center">IP Address</th>
+                          <th className="px-6 py-2 pb-2.5 font-label-sm tracking-wider uppercase whitespace-nowrap text-black font-bold text-center">Details</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody className="divide-y divide-outline-variant/30">
+                        {paginatedAuditLogs.map((log) => {
+                          const isExpanded = expandedLogId === log.id;
+                          return (
+                            <React.Fragment key={log.id}>
+                              <tr className="table-row-hover transition-colors group border-b-0">
+                                <td className="px-6 font-mono text-body-sm whitespace-nowrap py-2 border-r text-black">{log.id}</td>
+                                <td className="px-6 whitespace-nowrap py-2 border-r">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full text-white flex items-center justify-center font-bold text-xs" style={{ backgroundColor: log.avatarBg }}>
+                                      {log.initials}
+                                    </div>
+                                    <div className="font-body-md font-semibold text-black">{log.user}</div>
+                                  </div>
+                                </td>
+                                <td className="px-6 font-body-sm whitespace-nowrap py-2 border-r text-black">{log.role}</td>
+                                <td className="px-6 font-body-md text-on-surface font-medium whitespace-nowrap py-2 border-r">
+                                  <span className="text-[#3525cd] font-semibold">{log.event}</span>
+                                </td>
+                                <td className="px-6 whitespace-nowrap py-2 border-r">
+                                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-tight ${log.entityType === 'User' ? 'bg-blue-100 text-blue-700' :
+                                    log.entityType === 'Task' ? 'bg-teal-100 text-teal-700' :
+                                      log.entityType === 'Token' ? 'bg-slate-200 text-slate-700' :
+                                        log.entityType === 'Attachment' ? 'bg-blue-100 text-blue-700' :
+                                          'bg-slate-200 text-slate-700'
+                                    }`}>
+                                    {log.entityType}
+                                  </span>
+                                </td>
+                                <td className="px-6 font-body-sm whitespace-nowrap py-2 border-r text-black truncate max-w-[200px]" title={log.object}>
+                                  {log.object}
+                                </td>
+                                <td className="px-6 font-mono text-body-sm whitespace-nowrap py-2 border-r text-black">{log.createdAt}</td>
+                                <td className="px-6 font-mono text-body-sm whitespace-nowrap py-2 border-r text-black">{log.ipAddress}</td>
+                                <td className="px-6 text-center whitespace-nowrap py-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => setExpandedLogId(isExpanded ? null : log.id)}
+                                    className="inline-flex items-center gap-1 px-3 py-1 rounded bg-surface-container-low border border-outline-variant text-[#3525cd] font-label-sm transition-colors hover:bg-slate-200 cursor-pointer"
+                                  >
+                                    <span className="material-symbols-outlined text-[18px]">
+                                      {isExpanded ? 'visibility_off' : 'visibility'}
+                                    </span>
+                                    {isExpanded ? 'Hide' : 'View'}
+                                  </button>
+                                </td>
+                              </tr>
+                              {isExpanded && (
+                                <tr className="bg-surface-container-lowest">
+                                  <td className="px-6 py-4" colSpan={9}>
+                                    <div className="rounded-lg border border-outline-variant bg-slate-100 p-4">
+                                      <div className="flex items-center justify-between mb-3">
+                                        <h4 className="font-label-md text-black font-semibold">Log Payload</h4>
+                                        <span className="text-[11px] font-mono text-on-surface-variant">{log.id}</span>
+                                      </div>
+                                      <pre className="font-mono text-xs text-on-surface-variant bg-white p-4 rounded border border-outline-variant overflow-x-auto leading-relaxed shadow-sm">
+                                        {JSON.stringify(log.payload, null, 2)}
+                                      </pre>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                            </React.Fragment>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Footer / Pagination */}
+                  <div className="px-6 py-4 border-t border-outline-variant flex flex-col md:flex-row items-center gap-6 bg-white md:justify-end">
+                    <div className="flex items-center gap-6 text-black">
+                      <div className="flex items-center gap-3">
+                        <span className="font-label-md text-on-surface-variant text-sm font-medium">Rows per page</span>
+                        <div className="relative">
+                          <select
+                            value={modalRowsPerPage}
+                            onChange={(e) => {
+                              setModalRowsPerPage(parseInt(e.target.value));
+                              setModalPage(1);
+                            }}
+                            className="bg-surface-container-lowest border border-[#c7c4d8] rounded-lg py-1 pl-2 pr-6 font-body-sm text-on-surface focus:border-slate-600 focus:ring-0 transition-all cursor-pointer hover:bg-slate-100 text-sm"
+                          >
+                            <option value={10}>10</option>
+                            <option value={25}>25</option>
+                            <option value={50}>50</option>
+                            <option value={100}>100</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 border-l border-[#c7c4d8]/40 pl-6">
+                        <span className="font-label-md text-on-surface-variant text-sm font-medium">Page</span>
+                        <input
+                          type="number"
+                          min={1}
+                          max={maxAuditPages}
+                          value={currentAuditPage}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value);
+                            if (val >= 1 && val <= maxAuditPages) {
+                              setModalPage(val);
+                            }
+                          }}
+                          className="w-12 text-center bg-surface-container-lowest border border-[#c7c4d8] rounded-lg py-1 px-1.5 font-body-sm text-on-surface focus:border-slate-600 focus:ring-0 transition-all appearance-none"
+                        />
+                        <span className="font-label-md text-on-surface-variant text-sm font-medium">of {maxAuditPages}</span>
+                      </div>
+                      <span className="font-body-sm text-on-surface-variant border-l border-[#c7c4d8]/40 pl-6 text-sm">
+                        Showing <span className="font-semibold text-on-surface">{totalAuditLogs === 0 ? 0 : auditStartIndex + 1}-{auditEndIndex}</span> of <span className="font-semibold text-on-surface">{totalAuditLogs}</span> logs
+                      </span>
+                    </div>
+                  </div>
+                </section>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-white w-full max-w-2xl rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-300">
+              <div className="p-8 border-b border-gray-100 flex items-center justify-between bg-white sticky top-0 z-10">
+                <div>
+                  <h3 className="text-2xl font-bold text-[#170338] tracking-tight">
+                    Recent Activity</h3>
+                  <p className="text-sm text-[#5e636e] font-medium mt-1 opacity-90">
+                    Stay up to date with what's happening across the space.
+                  </p>
                 </div>
-              ) : (
+                <button
+                  type="button"
+                  onClick={() => setIsActivityModalOpen(false)}
+                  className="w-10 h-10 rounded-xl hover:bg-gray-100 flex items-center justify-center text-[#5e636e] transition-colors"
+                >
+                  <span className="material-symbols-outlined">close</span>
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto custom-scrollbar p-8 pt-6">
                 <div className="space-y-6">
                   {["Today", "Yesterday"].map((group) => (
                     <div key={group} className="space-y-3">
@@ -690,20 +1314,11 @@ const Dashboard = () => {
                     </div>
                   ))}
                 </div>
-              )}
-
-              {isAdmin && (
-                <div className="mt-8 flex items-center justify-between bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
-                  <span className="text-xs font-bold text-[#5e636e]">Showing 5 of 1,248 logs</span>
-                  <div className="flex gap-2">
-                    <button className="px-4 py-2 text-xs font-bold text-[#5e636e] border border-gray-100 rounded-lg hover:bg-gray-50 transition-all">Previous</button>
-                    <button className="px-4 py-2 text-xs font-bold text-white bg-[#4C2B74] rounded-lg shadow-md hover:shadow-lg transition-all">Next</button>
-                  </div>
-                </div>
-              )}
+              </div>
             </div>
-          </div>
-        </div>
+          )}
+        </div>,
+        document.body
       )}
 
       <div className="dashboard-container space-y-6">
@@ -1089,7 +1704,7 @@ const Dashboard = () => {
                           placeholder="Search operations..."
                           value={modalSearch}
                           onChange={(e) => setModalSearch(e.target.value)}
-                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-100 bg-gray-50 focus:bg-white focus:border-[#4C2B74] outline-none transition-all text-sm font-medium"
+                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-[#4C2B74] hover:border-gray-400 outline-none transition-all text-sm font-medium"
                         />
                       </div>
 
@@ -1100,14 +1715,18 @@ const Dashboard = () => {
                             setShowStatusFilter(!showStatusFilter);
                             setShowDateFilter(false);
                           }}
-                          className={`flex items-center justify-between gap-2 min-w-[140px] px-4 py-2.5 rounded-xl border transition-all text-sm font-bold ${selectedStatus !== "All Status" ? "border-[#4C2B74] text-[#4C2B74] bg-purple-50" : "border-gray-100 text-[#5e636e] hover:bg-gray-50"}`}
+                          className={`flex items-center justify-between gap-2 min-w-[140px] px-4 py-2.5 rounded-xl border transition-all text-sm font-bold ${
+                            selectedStatus !== "All Status" 
+                              ? "border-[#4C2B74] text-[#4C2B74] bg-purple-50" 
+                              : "border-gray-200 text-[#5e636e] hover:border-[#4C2B74] hover:text-[#4C2B74] hover:bg-purple-50/10 bg-white"
+                          }`}
                         >
                           <span className="truncate">{selectedStatus}</span>
                           <span className={`material-symbols-outlined text-gray-400 transition-transform ${showStatusFilter ? 'rotate-180' : ''}`}>expand_more</span>
                         </button>
                         {showStatusFilter && (
                           <div className="absolute top-full left-0 mt-2 w-52 bg-white border border-gray-100 rounded-2xl shadow-xl z-[100] p-2 animate-in fade-in zoom-in-95 duration-200">
-                            {['All Status', 'Done', 'In Progress', 'New'].map(st => (
+                            {['All Status', 'New', 'In Progress', 'In Testing', 'Pending Review', 'Need Revision', 'Done', 'Cancelled'].map(st => (
                               <button
                                 key={st}
                                 onClick={() => { setSelectedStatus(st); setShowStatusFilter(false); }}
@@ -1127,7 +1746,11 @@ const Dashboard = () => {
                             setShowDateFilter(!showDateFilter);
                             setShowStatusFilter(false);
                           }}
-                          className={`flex items-center justify-between gap-2 min-w-[140px] px-4 py-2.5 rounded-xl border transition-all text-sm font-bold ${selectedDate !== "All Dates" ? "border-[#4C2B74] text-[#4C2B74] bg-purple-50" : "border-gray-100 text-[#5e636e] hover:bg-gray-50"}`}
+                          className={`flex items-center justify-between gap-2 min-w-[140px] px-4 py-2.5 rounded-xl border transition-all text-sm font-bold ${
+                            selectedDate !== "All Dates" 
+                              ? "border-[#4C2B74] text-[#4C2B74] bg-purple-50" 
+                              : "border-gray-200 text-[#5e636e] hover:border-[#4C2B74] hover:text-[#4C2B74] hover:bg-purple-50/10 bg-white"
+                          }`}
                         >
                           <div className="flex items-center gap-2 truncate">
                             <span className="material-symbols-outlined text-gray-400 text-lg">calendar_today</span>
