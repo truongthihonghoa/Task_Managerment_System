@@ -3,6 +3,8 @@ import { Outlet, Link, useLocation, useNavigate, useSearchParams } from 'react-r
 import taskflowLogo from '../../assets/taskflow-logo.png';
 import CreateTaskModal from '../tasks/CreateTaskModal';
 import NotificationDropdown from '../notifications/NotificationDropdown';
+import SettingsDropdown from '../settings/SettingsDropdown';
+import AvatarDropdown from '../auth/AvatarDropdown';
 import HelpCenter from '../../pages/HelpCenter';
 
 export default function MainLayout() {
@@ -13,10 +15,16 @@ export default function MainLayout() {
   const [tasksForModal, setTasksForModal] = useState([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [showNotifications, setShowNotifications] = useState(false);
-  
+  const [showSettings, setShowSettings] = useState(false);
+  const [showAvatarDropdown, setShowAvatarDropdown] = useState(false);
+
+  const avatarRef = useRef(null);
+  const avatarDropdownRef = useRef(null);
   // Refs hỗ trợ đóng dropdown khi click ra ngoài
   const dropdownRef = useRef(null);
   const bellRef = useRef(null);
+  const settingsRef = useRef(null);
+  const settingsDropdownRef = useRef(null);
 
   const roleParam = searchParams.get('role')?.toUpperCase();
   const currentRole = roleParam === 'USER' ? 'USER' : 'ADMIN';
@@ -125,6 +133,18 @@ export default function MainLayout() {
       ) {
         setShowNotifications(false);
       }
+      if (
+        settingsDropdownRef.current && !settingsDropdownRef.current.contains(event.target) &&
+        settingsRef.current && !settingsRef.current.contains(event.target)
+      ) {
+        setShowSettings(false);
+      }
+      if (
+        avatarDropdownRef.current && !avatarDropdownRef.current.contains(event.target) &&
+        avatarRef.current && !avatarRef.current.contains(event.target)
+      ) {
+        setShowAvatarDropdown(false);
+      }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -135,7 +155,7 @@ export default function MainLayout() {
     if (window.lucide) {
       window.lucide.createIcons();
     }
-  }, [location.pathname, showNotifications]);
+  }, [location.pathname, showNotifications, showSettings, showAvatarDropdown]);
 
   const isDashboardActive = location.pathname === '/dashboard' || location.pathname === '/dashboard/';
   const isTasksActive = location.pathname === '/dashboard/spaces' || location.pathname.includes('/dashboard/tasks');
@@ -145,6 +165,23 @@ export default function MainLayout() {
   const isSettingsActive = location.pathname === '/dashboard/notification-settings';
   const isHelpActive = location.pathname === '/dashboard/help';
 
+  // Handlers for AvatarDropdown actions
+  const handleProfileClick = () => {
+    navigate(`/dashboard/profile${location.search}`);
+    setShowAvatarDropdown(false); // Close dropdown after navigation
+  };
+
+  const handleSettingsClick = () => {
+    navigate(`/dashboard/notification-settings${location.search}`);
+    setShowAvatarDropdown(false); // Close dropdown after navigation
+  };
+
+  const handleLogoutClick = () => {
+    // In a real application, this would involve clearing authentication tokens/state
+    console.log("User logged out"); // Placeholder for actual logout logic
+    navigate('/'); // Redirect to login or home page
+    setShowAvatarDropdown(false); // Close dropdown after logout
+  };
   return (
     <div className="h-screen flex overflow-hidden font-['Inter'] bg-[#F5F7FA]">
 
@@ -246,7 +283,7 @@ export default function MainLayout() {
               <span className="text-sm font-medium">Profile</span>
             </Link>
           )}
- 
+
           {/* Notifications Item */}
           {isNotificationsActive ? (
             <div className="relative flex items-center">
@@ -275,7 +312,7 @@ export default function MainLayout() {
         </nav>
 
         {/* Bottom Navigation */}
-        <div className="px-3 py-6 border-t border-gray-100 space-y-1">
+        <div className={`px-3 py-6 border-t border-gray-100 space-y-1 relative transition-transform duration-300 ${showSettings ? '-translate-y-[100px]' : ''}`}>
           {/* Help Item */}
           {isHelpActive ? (
             <div className="relative flex items-center">
@@ -291,21 +328,24 @@ export default function MainLayout() {
               <span className="text-sm font-medium">Help</span>
             </Link>
           )}
-          {/* Settings Item */}
-          {isSettingsActive ? (
-            <div className="relative flex items-center">
-              <div className="sidebar-active-indicator"></div>
-              <Link className="flex items-center flex-1 px-4 py-3 bg-[#E0E8FF] text-[#2D1B4E] rounded-xl transition-colors ml-2" to={`/dashboard/notification-settings${location.search}`}>
-                <i className="w-5 h-5 mr-3 text-[#2D1B4E]" data-lucide="settings"></i>
-                <span className="text-sm font-bold">Settings</span>
-              </Link>
-            </div>
-          ) : (
-            <Link className="flex items-center px-4 py-3 text-[#6B7280] hover:bg-gray-50 rounded-xl transition-colors" to={`/dashboard/notification-settings${location.search}`}>
-              <i className="w-5 h-5 mr-3" data-lucide="settings"></i>
-              <span className="text-sm font-medium">Settings</span>
-            </Link>
-          )}
+          <div className="relative" ref={settingsRef}>
+            <button
+              onClick={() => setShowSettings(!showSettings)}
+              className={`flex items-center w-full px-4 py-3 rounded-xl transition-colors ${isSettingsActive || showSettings ? 'bg-[#E0E8FF] text-[#2D1B4E]' : 'text-[#6B7280] hover:bg-gray-50'}`}
+            >
+              {(isSettingsActive || showSettings) && <div className="sidebar-active-indicator"></div>}
+              <div className="flex items-center flex-1">
+                <i className={`w-5 h-5 mr-3 ${isSettingsActive || showSettings ? 'text-[#2D1B4E]' : ''}`} data-lucide="settings"></i>
+                <span className={`text-sm ${isSettingsActive || showSettings ? 'font-bold' : 'font-medium'}`}>Settings</span>
+              </div>
+            </button>
+
+            {showSettings && (
+              <div ref={settingsDropdownRef} className="absolute left-0 top-full mt-2 z-50 w-full">
+                <SettingsDropdown onClose={() => setShowSettings(false)} />
+              </div>
+            )}
+          </div>
         </div>
       </aside>
       {/* END: LeftSidebar */}
@@ -373,25 +413,44 @@ export default function MainLayout() {
               )}
             </div>
 
-            {/* User Profile */}
-            <div className="flex items-center space-x-3 border-l pl-6 border-gray-200 font-['Inter']">
-              <div className="w-10 h-10 rounded-full bg-purple-100 border border-[#2D1B4E] flex items-center justify-center overflow-hidden">
-                <div className="w-full h-full bg-gradient-to-tr from-purple-200 to-indigo-100 flex items-center justify-center">
-                  <span className="text-[#2D1B4E] text-xs font-bold">{currentRole === 'ADMIN' ? 'AM' : 'TN'}</span>
+            <div className="relative" ref={avatarRef}>
+            <button
+                onClick={() => setShowAvatarDropdown(prev => !prev)}
+                className="flex items-center space-x-3 border-l pl-6 border-gray-200 font-['Inter']">
+                <div className="w-10 h-10 rounded-full bg-purple-100 border border-[#2D1B4E] flex items-center justify-center overflow-hidden shrink-0">
+                  <span className="text-[#2D1B4E] text-xs font-bold">
+                    {currentRole === 'ADMIN' ? 'AM' : 'TN'}
+                  </span>
                 </div>
-              </div>
-              <span className="text-sm font-semibold text-gray-800">{currentRole === 'ADMIN' ? 'Alex Morgan' : 'Trang Nguyễn'}</span>
-            </div>
+
+              {/* Name Section - flex-1 để đẩy icon sang phải */}
+              <span className="ml-3 text-sm font-semibold text-gray-800 flex-1 text-left">
+                {currentRole === 'ADMIN' ? 'Alex Morgan' : 'Trang Nguyễn'}
+              </span>
+            </button>
+
+            {showAvatarDropdown && (
+                <div
+                    ref={avatarDropdownRef}
+                    className="absolute right-0 top-full mt-2.5 z-[9999]"
+                >
+                    <AvatarDropdown
+                        currentRole={currentRole}
+                        onClose={() => setShowAvatarDropdown(false)}
+                        onProfileClick={handleProfileClick}
+                        onSettingsClick={handleSettingsClick}
+                        onLogoutClick={handleLogoutClick}
+                    />
+                </div>
+            )}
+        </div>
           </div>
         </header>
         {/* END: MainHeader */}
 
+        {/* BEGIN: MainContentArea */}
         <main className="flex-1 bg-[#F5F7FA] overflow-y-auto relative" data-purpose="main-display">
-          {isHelpActive ? (
-            <HelpCenter />
-          ) : (
-            <Outlet context={{ setShowCreateModal, setTasksForModal }} />
-          )}
+          <Outlet context={{ setShowCreateModal, setTasksForModal }} />
         </main>
         {/* END: MainContentArea */}
 
