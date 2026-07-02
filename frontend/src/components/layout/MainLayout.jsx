@@ -4,6 +4,7 @@ import taskflowLogo from '../../assets/taskflow-logo.png';
 import CreateTaskModal from '../tasks/CreateTaskModal';
 import NotificationDropdown from '../notifications/NotificationDropdown';
 import AvatarDropdown  from '../auth/AvatarDropdown';
+import HelpCenter from '../../pages/HelpCenter';
 
 export default function MainLayout() {
   const location = useLocation();
@@ -180,6 +181,7 @@ export default function MainLayout() {
     navigate('/'); // Redirect to login or home page
     setShowAvatarDropdown(false); // Close dropdown after logout
   };
+  const isHelpActive = location.pathname === '/dashboard/help';
 
   return (
     <div className="h-screen flex overflow-hidden font-['Inter'] bg-[#F5F7FA]">
@@ -312,10 +314,22 @@ export default function MainLayout() {
 
         {/* Bottom Navigation */}
         <div className="px-3 py-6 border-t border-gray-100 space-y-1">
-          <Link className="flex items-center px-4 py-3 text-[#6B7280] hover:bg-gray-50 rounded-xl transition-colors" to="#">
-            <i className="w-5 h-5 mr-3" data-lucide="help-circle"></i>
-            <span className="text-sm font-medium">Help</span>
-          </Link>
+          {/* Help Item */}
+          {isHelpActive ? (
+            <div className="relative flex items-center">
+              <div className="sidebar-active-indicator"></div>
+              <Link className="flex items-center flex-1 px-4 py-3 bg-[#E0E8FF] text-[#2D1B4E] rounded-xl transition-colors ml-2" to="/dashboard/help">
+                <i className="w-5 h-5 mr-3 text-[#2D1B4E]" data-lucide="help-circle"></i>
+                <span className="text-sm font-bold">Help</span>
+              </Link>
+            </div>
+          ) : (
+            <Link className="flex items-center px-4 py-3 text-[#6B7280] hover:bg-gray-50 rounded-xl transition-colors" to="/dashboard/help">
+              <i className="w-5 h-5 mr-3" data-lucide="help-circle"></i>
+              <span className="text-sm font-medium">Help</span>
+            </Link>
+          )}
+          {/* Settings Item */}
           {isSettingsActive ? (
             <div className="relative flex items-center">
               <div className="sidebar-active-indicator"></div>
@@ -432,9 +446,12 @@ export default function MainLayout() {
         </header>
         {/* END: MainHeader */}
 
-        {/* BEGIN: MainContentArea */}
         <main className="flex-1 bg-[#F5F7FA] overflow-y-auto relative" data-purpose="main-display">
-          <Outlet context={{ setShowCreateModal, setTasksForModal }} />
+          {isHelpActive ? (
+            <HelpCenter />
+          ) : (
+            <Outlet context={{ setShowCreateModal, setTasksForModal }} />
+          )}
         </main>
         {/* END: MainContentArea */}
 
