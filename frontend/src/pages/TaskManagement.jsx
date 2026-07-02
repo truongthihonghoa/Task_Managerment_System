@@ -59,7 +59,8 @@ const formatTaskDate = (dateValue) => {
 export default function TaskManagement() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { setShowCreateModal, setTasksForModal, setCreateTaskHandler } = useOutletContext() || {};
+  const { setShowCreateModal, setTasksForModal, setCreateTaskHandler, currentRole = 'ADMIN' } = useOutletContext() || {};
+  const isAdmin = currentRole === 'ADMIN';
   const [view, setView] = useState('list');
   const [selectedTasks, setSelectedTasks] = useState([]);
   const [isSprintExpanded, setIsSprintExpanded] = useState(true);
@@ -341,7 +342,7 @@ export default function TaskManagement() {
             </button>
             <div className="absolute top-[100%] left-0 pt-1 w-48 hidden group-hover:block z-50">
               <div className="bg-white border border-outline-variant rounded-xl shadow-2xl overflow-hidden">
-                {['New', 'In Progress', 'In Testing', 'Pending Review', 'Need Revision', 'Done', 'Cancelled'].map(status => (
+                {(isAdmin ? ['New', 'In Progress', 'In Testing', 'Pending Review', 'Need Revision', 'Done', 'Cancelled'] : ['New', 'In Progress', 'In Testing', 'Pending Review', 'Need Revision', 'Done']).map(status => (
                   <div key={status} className="px-4 py-2 text-[11px] hover:bg-[#EBF0FF] transition-colors cursor-pointer text-on-surface">
                     {status}
                   </div>
@@ -538,7 +539,7 @@ export default function TaskManagement() {
         <div style={{ flex: '1 1 0', minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <DragDropContext onDragEnd={onDragEnd}>
             <div className="flex gap-4 pb-4 scrollbar-hide" id="board-view-container" style={{ flex: '1 1 0', minHeight: 0, overflowX: 'auto', overflowY: 'hidden', alignItems: 'stretch' }}>
-              {['New', 'In Progress', 'In Testing', 'Pending Review', 'Need Revision', 'Done', 'Cancelled'].map(status => (
+              {(isAdmin ? ['New', 'In Progress', 'In Testing', 'Pending Review', 'Need Revision', 'Done', 'Cancelled'] : ['New', 'In Progress', 'In Testing', 'Pending Review', 'Need Revision', 'Done']).map(status => (
                 <KanbanColumn
                   key={status}
                   title={status}
@@ -547,6 +548,7 @@ export default function TaskManagement() {
                   onCreateTask={setShowCreateModal ? () => setShowCreateModal(true) : undefined}
                   onOpenDetail={setSelectedTaskDetail}
                   color={status === 'Need Revision' ? 'error' : status === 'Done' ? 'green' : status === 'Cancelled' ? 'grey' : 'outline'}
+                  currentRole={currentRole}
                 />
               ))}
             </div>
@@ -587,7 +589,7 @@ export default function TaskManagement() {
               <div className="flex items-center gap-4">
                 <div className="flex gap-1">
                   <span className="px-1.5 py-0.5 bg-gray-200 text-[10px] font-bold rounded text-outline">
-                    {filteredTasks.filter(t => t.status === 'New' || t.status === 'Cancelled').length}
+                    {filteredTasks.filter(t => t.status === 'New' || (isAdmin && t.status === 'Cancelled')).length}
                   </span>
                   <span className="px-1.5 py-0.5 bg-[#ADC4FF] text-[10px] font-bold rounded text-[#003d9b]">
                     {filteredTasks.filter(t => ['In Progress', 'In Testing', 'Pending Review', 'Need Revision'].includes(t.status)).length}
@@ -640,7 +642,7 @@ export default function TaskManagement() {
                       <th className="px-6 py-3 font-bold text-center">Priority</th>
                       <th className="px-6 py-3 font-bold">Status</th>
                       <th className="px-6 py-3 font-bold">Completed</th>
-                      <th className="px-6 py-3 font-bold text-center">Actions</th>
+                      {isAdmin && <th className="px-6 py-3 font-bold text-center">Actions</th>}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-outline-variant">
@@ -648,6 +650,7 @@ export default function TaskManagement() {
                       <TaskRow
                         key={task.id}
                         {...task}
+                        isAdmin={isAdmin}
                         isSelected={selectedTasks.includes(task.id)}
                         isAnySelected={selectedTasks.length > 0}
                         onToggle={() => toggleTask(task.id)}
@@ -882,6 +885,7 @@ export default function TaskManagement() {
         task={selectedTaskDetail}
         onClose={() => setSelectedTaskDetail(null)}
         tasks={tasks}
+        currentRole={currentRole}
         onUpdateTask={(updatedTask) => {
           setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
           setSelectedTaskDetail(updatedTask);
@@ -898,7 +902,7 @@ export default function TaskManagement() {
   );
 }
 
-function KanbanColumn({ title, tasks, setTasks, onCreateTask, onOpenDetail, color = 'outline' }) {
+function KanbanColumn({ title, tasks, setTasks, onCreateTask, onOpenDetail, color = 'outline', currentRole }) {
   const headerClass = `bg-[#E0E8FF] border-[#ADC4FF] ${title === 'Need Revision' ? 'text-[#BA1A1A]' :
     title === 'Done' ? 'text-[#006D3A]' :
       title === 'Cancelled' ? 'text-[#475467]' :
@@ -919,7 +923,7 @@ function KanbanColumn({ title, tasks, setTasks, onCreateTask, onOpenDetail, colo
             style={{ flex: '1 1 0', minHeight: '50px', overflowY: 'auto', overflowX: 'visible', scrollbarWidth: 'thin' }}
           >
             {tasks.map((task, index) => (
-              <TaskCard key={task.id} task={task} index={index} totalCount={tasks.length} setTasks={setTasks} onOpenDetail={onOpenDetail} />
+              <TaskCard key={task.id} task={task} index={index} totalCount={tasks.length} setTasks={setTasks} onOpenDetail={onOpenDetail} currentRole={currentRole} />
             ))}
             {provided.placeholder}
           </div>
@@ -936,7 +940,7 @@ function KanbanColumn({ title, tasks, setTasks, onCreateTask, onOpenDetail, colo
   );
 }
 
-function TaskCard({ task, index, totalCount, setTasks, onOpenDetail }) {
+function TaskCard({ task, index, totalCount, setTasks, onOpenDetail, currentRole }) {
   const { id, title, date, pts, priority, status, attachments = [] } = task;
   const previewImage = attachments.find(att => att.type === 'image' && att.previewUrl)?.previewUrl;
   const [isEditing, setIsEditing] = React.useState(false);
@@ -951,7 +955,9 @@ function TaskCard({ task, index, totalCount, setTasks, onOpenDetail }) {
   const assigneeBtnRef = useRef(null);
   const assigneeMenuRef = useRef(null);
 
-  const statuses = ['New', 'In Progress', 'In Testing', 'Pending Review', 'Need Revision', 'Done', 'Cancelled'];
+  const statuses = currentRole === 'ADMIN'
+    ? ['New', 'In Progress', 'In Testing', 'Pending Review', 'Need Revision', 'Done', 'Cancelled']
+    : ['New', 'In Progress', 'In Testing', 'Pending Review', 'Need Revision', 'Done'];
 
   // Đóng menu khi click ra ngoài
   useEffect(() => {
@@ -1212,7 +1218,7 @@ function TaskCard({ task, index, totalCount, setTasks, onOpenDetail }) {
   );
 }
 
-function TaskRow({ id, title, assignee, pts, status, date, priority, isSelected, isAnySelected, onToggle, onOpenDetail, onDelete, onUpdateAssignee }) {
+function TaskRow({ id, title, assignee, pts, status, date, priority, isSelected, isAnySelected, onToggle, onOpenDetail, onDelete, onUpdateAssignee, isAdmin = true }) {
   const statusClass = status === 'Need Revision'
     ? 'bg-[#FFF0F0] text-[#BA1A1A]'
     : status === 'Done'
@@ -1327,17 +1333,19 @@ function TaskRow({ id, title, assignee, pts, status, date, priority, isSelected,
         <span className={`px-3 py-1 rounded-full ${statusClass} text-[9px] font-bold uppercase`}>{status}</span>
       </td>
       <td className="px-4 py-2 text-[11px] text-outline">{date}</td>
-      <td className="px-4 py-2 text-center">
-        <span
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete && onDelete();
-          }}
-          className="material-symbols-outlined text-outline hover:text-error cursor-pointer text-[16px]"
-        >
-          delete
-        </span>
-      </td>
+      {isAdmin && (
+        <td className="px-4 py-2 text-center">
+          <span
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete && onDelete();
+            }}
+            className="material-symbols-outlined text-outline hover:text-error cursor-pointer text-[16px]"
+          >
+            delete
+          </span>
+        </td>
+      )}
     </tr>
   );
 }

@@ -87,7 +87,7 @@ function CalendarDropdown({ value, onSelect, onClose }) {
   );
 }
 
-const CreateTaskModal = ({ isOpen, onClose, tasks = [], onCreateTask, currentRole = 'ADMIN' }) => {
+const CreateTaskModal = ({ isOpen, onClose, tasks = [], onCreateTask, currentRole = 'ADMIN', currentUser }) => {
   const statusOptions = currentRole === 'ADMIN'
     ? ['New', 'In Progress', 'In Testing', 'Pending Review', 'Need Revision', 'Done', 'Cancelled']
     : ['New', 'In Progress', 'In Testing', 'Pending Review', 'Need Revision', 'Done'];
@@ -104,6 +104,7 @@ const CreateTaskModal = ({ isOpen, onClose, tasks = [], onCreateTask, currentRol
     sprint: '',
     storyPoints: '',
     comment: '',
+    attachments: [],
     createAnother: false
   });
 
@@ -116,6 +117,123 @@ const CreateTaskModal = ({ isOpen, onClose, tasks = [], onCreateTask, currentRol
   const [isUpdatedAtOpen, setIsUpdatedAtOpen] = useState(false);
   const [isSprintOpen, setIsSprintOpen] = useState(false);
   const [onlyShowCurrentSpace, setOnlyShowCurrentSpace] = useState(true);
+  const currentUserId = currentUser?.id || currentUser?.user_id || null;
+  const fileInputRef = useRef(null);
+  const replaceInputRef = useRef(null);
+  const [replaceTargetId, setReplaceTargetId] = useState(null);
+
+  const formatFileSize = (bytes) => {
+    if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    if (bytes >= 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${bytes} B`;
+  };
+
+  const createAttachmentFromFile = (file, index = 0) => {
+    const isImage = file.type.startsWith('image/');
+    const url = isImage ? URL.createObjectURL(file) : null;
+    return {
+      id: Date.now() + index,
+      name: file.name,
+      size: formatFileSize(file.size),
+      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      icon: file.name.endsWith('.zip') ? 'folder_zip' : file.name.endsWith('.pdf') ? 'picture_as_pdf' : isImage ? 'image' : 'upload_file',
+      color: file.name.endsWith('.zip') ? '#4C2B74' : file.name.endsWith('.pdf') ? '#DE350B' : '#4C2B74',
+      bg: file.name.endsWith('.zip') ? '#EBF5FF' : file.name.endsWith('.pdf') ? '#FFF5F5' : '#EEF3FF',
+      type: isImage ? 'image' : 'file',
+      previewUrl: url,
+      url,
+      uploadedBy: currentUserId
+    };
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    const files = Array.from(e.dataTransfer.files || []);
+    if (!files.length) return;
+    const newAttachments = files.map((file, index) => createAttachmentFromFile(file, index));
+    setFormData(prev => ({
+      ...prev,
+      attachments: [...(prev.attachments || []), ...newAttachments]
+    }));
+  };
+
+  const handleFileChange = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    const newAttachments = files.map((file, index) => createAttachmentFromFile(file, index));
+    setFormData(prev => ({
+      ...prev,
+      attachments: [...(prev.attachments || []), ...newAttachments]
+    }));
+    e.target.value = '';
+  };
+
+  const triggerReplace = (id) => {
+    setReplaceTargetId(id);
+    replaceInputRef.current?.click();
+  };
+
+  const handleReplaceFile = (e) => {
+    const file = e.target.files?.[0];
+    if (!file || replaceTargetId == null) return;
+    const newAtt = createAttachmentFromFile(file);
+    setFormData(prev => {
+      const next = (prev.attachments || []).map(a => {
+        if (a.id !== replaceTargetId) return a;
+        if (a.previewUrl) {
+          try { URL.revokeObjectURL(a.previewUrl); } catch (_) {}
+        }
+        return newAtt;
+      });
+      return { ...prev, attachments: next };
+    });
+    setReplaceTargetId(null);
+    e.target.value = '';
+  };
+
+  const deleteAttachment = (id) => {
+    setFormData(prev => {
+      const toDelete = (prev.attachments || []).find(a => a.id === id);
+      if (toDelete && toDelete.previewUrl) {
+        try { URL.revokeObjectURL(toDelete.previewUrl); } catch (_) {}
+      }
+      const next = (prev.attachments || []).filter(a => a.id !== id);
+      return { ...prev, attachments: next };
+    });
+  };
+
+  const downloadAttachment = (att, e) => {
+    e?.stopPropagation();
+    if (!att) return;
+    if (att.previewUrl) {
+      try {
+        const a = document.createElement('a');
+        a.href = att.previewUrl;
+        a.download = att.name || 'download';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      } catch (err) {
+        window.open(att.previewUrl, '_blank');
+      }
+    }
+  };
+
+  const handleClose = () => {
+    if (formData.attachments) {
+      formData.attachments.forEach(att => {
+        if (att.previewUrl) {
+          try { URL.revokeObjectURL(att.previewUrl); } catch (_) {}
+        }
+      });
+    }
+    onClose();
+  };
+
   const assigneeBtnRef = useRef(null);
   const assigneeMenuRef = useRef(null);
 
@@ -168,14 +286,21 @@ const CreateTaskModal = ({ isOpen, onClose, tasks = [], onCreateTask, currentRol
     }
 
     if (!formData.createAnother) {
-      onClose();
+      handleClose();
     } else {
-      setFormData(prev => ({ ...prev, summary: '', description: '', comment: '' }));
+      if (formData.attachments) {
+        formData.attachments.forEach(att => {
+          if (att.previewUrl) {
+            try { URL.revokeObjectURL(att.previewUrl); } catch (_) {}
+          }
+        });
+      }
+      setFormData(prev => ({ ...prev, summary: '', description: '', comment: '', attachments: [] }));
     }
   };
 
   return (
-    <div className="create-task-overlay" onClick={onClose}>
+    <div className="create-task-overlay" onClick={handleClose}>
       <div className="create-task-modal" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="modal-header">
@@ -184,7 +309,7 @@ const CreateTaskModal = ({ isOpen, onClose, tasks = [], onCreateTask, currentRol
             <button className="header-btn" title="Maximize">
               <i data-lucide="maximize-2" className="w-4 h-4 text-gray-500"></i>
             </button>
-            <button className="header-btn" onClick={onClose} title="Close">
+            <button className="header-btn" onClick={handleClose} title="Close">
               <i data-lucide="x" className="w-4 h-4 text-gray-500"></i>
             </button>
           </div>
@@ -201,10 +326,20 @@ const CreateTaskModal = ({ isOpen, onClose, tasks = [], onCreateTask, currentRol
               <div className="space-icon">
                 <i data-lucide="zap" className="w-4 h-4 text-white"></i>
               </div>
-              <select name="space" className="select-custom pl-10" value={formData.space} onChange={handleInputChange}>
+              <select 
+                name="space" 
+                className="select-custom pl-10" 
+                value={formData.space} 
+                onChange={handleInputChange}
+                disabled={currentRole !== 'ADMIN'}
+              >
                 <option>Task Management System (SCRUM)</option>
-                <option>Project Alpha (KANBAN)</option>
-                <option>Web Redesign (SCRUM)</option>
+                {currentRole === 'ADMIN' && (
+                  <>
+                    <option>Project Alpha (KANBAN)</option>
+                    <option>Web Redesign (SCRUM)</option>
+                  </>
+                )}
               </select>
             </div>
           </div>
@@ -532,12 +667,90 @@ const CreateTaskModal = ({ isOpen, onClose, tasks = [], onCreateTask, currentRol
           {/* Attachment */}
           <div className="form-group">
             <label>Attachment</label>
-            <div className="attachment-zone">
+            <div 
+              className="attachment-zone"
+              onClick={() => fileInputRef.current?.click()}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+            >
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={handleFileChange} 
+                style={{ display: 'none' }} 
+                multiple 
+              />
+              <input 
+                type="file" 
+                ref={replaceInputRef} 
+                onChange={handleReplaceFile} 
+                style={{ display: 'none' }} 
+              />
               <div className="flex flex-col items-center justify-center gap-2">
                 <i data-lucide="upload-cloud" className="w-8 h-8 text-gray-400"></i>
                 <span className="text-sm">Drop files to attach or <span className="browse-link">Browse</span></span>
               </div>
             </div>
+
+            {/* Attachments List */}
+            {formData.attachments && formData.attachments.length > 0 && (
+              <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {formData.attachments.map((file) => (
+                  <div
+                    key={file.id}
+                    className="flex items-center gap-3 group cursor-pointer hover:bg-slate-50 transition-colors"
+                    style={{ padding: '8px 12px', border: '1px solid #DFE1E6', borderRadius: '6px' }}
+                  >
+                    {file.type === 'image' && file.previewUrl ? (
+                      <img
+                        src={file.previewUrl}
+                        alt={file.name}
+                        style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '6px', border: '1px solid #DFE1E6' }}
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center shrink-0" style={{ width: '40px', height: '40px', backgroundColor: file.bg, borderRadius: '6px' }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '22px', color: file.color }}>{file.icon}</span>
+                      </div>
+                    )}
+                    <div className="flex flex-col flex-1 overflow-hidden">
+                      <span className="truncate" style={{ fontSize: '13px', fontWeight: 600, color: '#172B4D' }}>{file.name}</span>
+                      <span style={{ fontSize: '11px', color: '#6B778C' }}>{file.size} • {file.date}</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); triggerReplace(file.id); }}
+                        title="Replace"
+                        style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#6B778C', padding: 6, borderRadius: 6 }}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: 18 }}>edit</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); deleteAttachment(file.id); }}
+                        title="Delete"
+                        style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#DE350B', padding: 6, borderRadius: 6 }}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <span className="material-symbols-outlined">delete</span>
+                      </button>
+                      {file.previewUrl && (
+                        <button
+                          type="button"
+                          onClick={(e) => downloadAttachment(file, e)}
+                          title="Download"
+                          style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#42526E', padding: 6, borderRadius: 6 }}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: 18 }}>download</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
         </div>
@@ -555,7 +768,7 @@ const CreateTaskModal = ({ isOpen, onClose, tasks = [], onCreateTask, currentRol
             <label htmlFor="createAnother" className="text-sm ml-2 cursor-pointer">Create another</label>
           </div>
           <div className="footer-right">
-            <button className="btn-cancel" onClick={onClose}>Cancel</button>
+            <button className="btn-cancel" onClick={handleClose}>Cancel</button>
             <button className="btn-create" onClick={handleCreate}>Create</button>
           </div>
         </div>

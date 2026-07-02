@@ -61,7 +61,9 @@ export default function TaskDetailModal({ task, onClose, tasks = [], onUpdateTas
   const currentUserName = currentUser?.name || currentUser?.authorName || 'Unknown User';
   const isAdmin = currentRole === 'ADMIN';
   const currentUserNames = useMemo(() => [currentUser?.name, currentUser?.fullName, currentUser?.username].filter(Boolean), [currentUser]);
-  const statusOptions = ['New', 'In Progress', 'In Testing', 'Pending Review', 'Need Revision', 'Done', 'Cancelled'];
+  const statusOptions = currentRole === 'ADMIN'
+    ? ['New', 'In Progress', 'In Testing', 'Pending Review', 'Need Revision', 'Done', 'Cancelled']
+    : ['New', 'In Progress', 'In Testing', 'Pending Review', 'Need Revision', 'Done'];
   const canEditTaskContent = useMemo(() => {
     if (isAdmin || currentRole === 'USER') return true;
     if (!currentUserId || !localTask) return false;
