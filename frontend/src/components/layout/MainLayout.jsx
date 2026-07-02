@@ -283,7 +283,7 @@ export default function MainLayout() {
               <span className="text-sm font-medium">Profile</span>
             </Link>
           )}
- 
+
           {/* Notifications Item */}
           {isNotificationsActive ? (
             <div className="relative flex items-center">
