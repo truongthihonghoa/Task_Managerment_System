@@ -4,6 +4,7 @@ import { useNavigate, useOutletContext, useLocation } from 'react-router-dom';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import SprintInfoPopover from '../components/tasks/SprintInfoPopover';
 import CompleteSprintModal from '../components/tasks/CompleteSprintModal';
+import EditSprintModal from '../components/tasks/EditSprintModal';
 import TaskDetailModal from '../components/tasks/TaskDetailModal';
 import DeleteTaskModal from '../components/tasks/DeleteTaskModal';
 
@@ -89,6 +90,25 @@ export default function TaskManagement() {
   const [expandedSprints, setExpandedSprints] = useState({});
   // Which sprint's ... menu is open (null = none, 'sprint-1' = Sprint 1, sprint.id = extra sprint)
   const [openSprintMenuId, setOpenSprintMenuId] = useState(null);
+
+  // Sprint 1 data (editable)
+  const [sprint1Data, setSprint1Data] = useState({
+    id: 'sprint-1',
+    name: 'SCRUM Sprint 1',
+    dateRange: '18 Jun – 2 Jul',
+    startDate: '2026-06-18T00:00',
+    duration: 2,
+    goal: '',
+    autoStart: false,
+    autoComplete: false,
+  });
+
+  // Edit Sprint modal states
+  const [isEditSprintOpen, setIsEditSprintOpen] = useState(false);
+  const [sprintToEdit, setSprintToEdit] = useState(null);
+
+  // Delete Sprint confirm states
+  const [deleteSprintConfirmId, setDeleteSprintConfirmId] = useState(null);
 
   const [tasks, setTasks] = useState([
     { id: "TM-1", title: "Infrastructure setup", assignee: "Pham Tien", pts: 4, status: "New", priority: "High", date: "Jun 24, 2026", description: "" },
@@ -214,6 +234,23 @@ export default function TaskManagement() {
   const handleDeleteExtraSprint = (sprintId) => {
     setExtraSprints(prev => prev.filter(s => s.id !== sprintId));
     setOpenSprintMenuId(null);
+    setDeleteSprintConfirmId(null);
+  };
+
+  const handleOpenEditSprint = (sprintData) => {
+    setSprintToEdit(sprintData);
+    setIsEditSprintOpen(true);
+    setOpenSprintMenuId(null);
+  };
+
+  const handleUpdateSprint = (updatedSprint) => {
+    if (updatedSprint.id === 'sprint-1') {
+      setSprint1Data(updatedSprint);
+    } else {
+      setExtraSprints(prev => prev.map(s => s.id === updatedSprint.id ? { ...s, ...updatedSprint } : s));
+    }
+    setIsEditSprintOpen(false);
+    setSprintToEdit(null);
   };
 
   // Close sprint menus when clicking outside
@@ -541,8 +578,8 @@ export default function TaskManagement() {
                   onClick={() => setIsSprintInfoOpen(!isSprintInfoOpen)}
                   className="flex items-center gap-1.5 cursor-pointer hover:bg-slate-100/80 px-2 py-0.5 rounded transition-all select-none"
                 >
-                  <span className="text-[12px] font-bold text-on-surface">SCRUM Sprint 1</span>
-                  <span className="text-[11px] text-outline">18 Jun – 2 Jul</span>
+                  <span className="text-[12px] font-bold text-on-surface">{sprint1Data.name}</span>
+                  <span className="text-[11px] text-outline">{sprint1Data.dateRange}</span>
                   <span className="material-symbols-outlined text-[14px] text-outline">info</span>
                 </div>
                 <span className="text-[11px] text-outline">({filteredTasks.length} work items)</span>
@@ -576,13 +613,13 @@ export default function TaskManagement() {
                   {openSprintMenuId === 'sprint-1' && (
                     <div className="absolute right-0 top-full mt-1 w-[160px] bg-white border border-outline-variant rounded-lg shadow-2xl py-1 z-[200]">
                       <button
-                        onClick={() => { setOpenSprintMenuId(null); }}
+                        onClick={() => handleOpenEditSprint(sprint1Data)}
                         className="w-full px-4 py-2.5 text-[13px] text-left text-on-surface hover:bg-[#EBF0FF] hover:text-[#003d9b] transition-colors"
                       >
                         Edit sprint
                       </button>
                       <button
-                        onClick={() => { setOpenSprintMenuId(null); }}
+                        onClick={() => { setOpenSprintMenuId(null); setDeleteSprintConfirmId('sprint-1'); }}
                         className="w-full px-4 py-2.5 text-[13px] text-left text-error hover:bg-red-50 transition-colors"
                       >
                         Delete sprint
@@ -681,13 +718,13 @@ export default function TaskManagement() {
                     {openSprintMenuId === sprint.id && (
                       <div className="absolute right-0 top-full mt-1 w-[160px] bg-white border border-outline-variant rounded-lg shadow-2xl py-1 z-[200]">
                         <button
-                          onClick={() => { setOpenSprintMenuId(null); }}
+                          onClick={() => handleOpenEditSprint(sprint)}
                           className="w-full px-4 py-2.5 text-[13px] text-left text-on-surface hover:bg-[#EBF0FF] hover:text-[#003d9b] transition-colors"
                         >
                           Edit sprint
                         </button>
                         <button
-                          onClick={() => handleDeleteExtraSprint(sprint.id)}
+                          onClick={() => { setOpenSprintMenuId(null); setDeleteSprintConfirmId(sprint.id); }}
                           className="w-full px-4 py-2.5 text-[13px] text-left text-error hover:bg-red-50 transition-colors"
                         >
                           Delete sprint
@@ -776,10 +813,70 @@ export default function TaskManagement() {
       <CompleteSprintModal
         isOpen={isCompleteSprintOpen}
         onClose={() => setIsCompleteSprintOpen(false)}
-        sprintName="SCRUM Sprint 1"
+        sprintName={sprint1Data.name}
         completedTasksCount={tasks.filter(t => t.status === 'Done').length}
         openTasksCount={tasks.filter(t => t.status !== 'Done').length}
       />
+
+      <EditSprintModal
+        isOpen={isEditSprintOpen}
+        onClose={() => { setIsEditSprintOpen(false); setSprintToEdit(null); }}
+        sprint={sprintToEdit}
+        onUpdate={handleUpdateSprint}
+      />
+
+      {/* Delete Sprint Confirmation Popup */}
+      {deleteSprintConfirmId && createPortal(
+        <div
+          className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/40"
+          onClick={() => setDeleteSprintConfirmId(null)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-[350px] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6">
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
+                  <span className="material-symbols-outlined text-orange-600 text-xl">warning</span>
+                </div>
+                <div className="flex-1">
+                  <h2 className="text-lg font-bold text-gray-900">Delete Sprint</h2>
+                  <p className="mt-1 text-sm text-gray-600 leading-relaxed">
+                    Are you sure you want to delete{' '}
+                    <strong className="text-[#121c2a]">
+                      {deleteSprintConfirmId === 'sprint-1'
+                        ? sprint1Data.name
+                        : extraSprints.find(s => s.id === deleteSprintConfirmId)?.name || 'this sprint'}
+                    </strong>?
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={() => setDeleteSprintConfirmId(null)}
+                  className="flex-1 px-4 py-2 text-sm font-semibold text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    if (deleteSprintConfirmId !== 'sprint-1') {
+                      handleDeleteExtraSprint(deleteSprintConfirmId);
+                    } else {
+                      setDeleteSprintConfirmId(null);
+                    }
+                  }}
+                  className="flex-1 px-4 py-2 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
 
       <TaskDetailModal
         task={selectedTaskDetail}
