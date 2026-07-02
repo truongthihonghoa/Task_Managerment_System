@@ -59,7 +59,7 @@ const formatTaskDate = (dateValue) => {
 export default function TaskManagement() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { setShowCreateModal, setTasksForModal, setCreateTaskHandler, currentRole = 'ADMIN' } = useOutletContext() || {};
+  const { setShowCreateModal, setTasksForModal, setCreateTaskHandler, currentRole = 'ADMIN', currentUser } = useOutletContext() || {};
   const isAdmin = currentRole === 'ADMIN';
   const [view, setView] = useState('list');
   const [selectedTasks, setSelectedTasks] = useState([]);
@@ -886,6 +886,7 @@ export default function TaskManagement() {
         onClose={() => setSelectedTaskDetail(null)}
         tasks={tasks}
         currentRole={currentRole}
+        currentUser={currentUser}
         onUpdateTask={(updatedTask) => {
           setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
           setSelectedTaskDetail(updatedTask);

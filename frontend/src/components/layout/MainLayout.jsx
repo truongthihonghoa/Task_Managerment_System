@@ -31,7 +31,7 @@ export default function MainLayout() {
   const currentRole = roleParam === 'USER' ? 'USER' : 'ADMIN';
   const currentUser = currentRole === 'ADMIN'
     ? { id: 'admin-demo-user', name: 'Alex Morgan', initials: 'AM', role: 'ADMIN' }
-    : { id: '8ce04f65-ea2c-4279-8350-7c1f0e81c9f5', name: 'Trong Nghia', initials: 'TN', role: 'USER' };
+    : { id: '8ce04f65-ea2c-4279-8350-7c1f0e81c9f5', name: 'Trang Nguyễn', initials: 'TN', role: 'USER' };
 
   // State dữ liệu thông báo giả lập để tính toán badge số lượng
   const [allNotifications, setAllNotifications] = useState([
@@ -429,27 +429,21 @@ export default function MainLayout() {
 
 
             {/* User Profile */}
-            <div className="flex items-center space-x-3 border-l pl-6 border-gray-200 font-['Inter']">
-              <div className="w-10 h-10 rounded-full bg-purple-100 border border-[#2D1B4E] flex items-center justify-center overflow-hidden">
-                <div className="w-full h-full bg-gradient-to-tr from-purple-200 to-indigo-100 flex items-center justify-center">
-                  <span className="text-[#2D1B4E] text-xs font-bold">{currentUser.initials}</span>
-                </div>
-              </div>
-              <span className="text-sm font-semibold text-gray-800">{currentUser.name}</span>
-            </div>
             <div className="relative" ref={avatarRef}>
             <button
                 onClick={() => setShowAvatarDropdown(prev => !prev)}
                 className="flex items-center space-x-3 border-l pl-6 border-gray-200 font-['Inter']">
                 <div className="w-10 h-10 rounded-full bg-purple-100 border border-[#2D1B4E] flex items-center justify-center overflow-hidden shrink-0">
-                  <span className="text-[#2D1B4E] text-xs font-bold">
-                    {currentRole === 'ADMIN' ? 'AM' : 'TN'}
-                  </span>
+                  <div className="w-full h-full bg-gradient-to-tr from-purple-200 to-indigo-100 flex items-center justify-center">
+                    <span className="text-[#2D1B4E] text-xs font-bold">
+                      {currentUser.initials}
+                    </span>
+                  </div>
                 </div>
 
               {/* Name Section - flex-1 để đẩy icon sang phải */}
-              <span className="ml-3 text-sm font-semibold text-gray-800 flex-1 text-left">
-                {currentRole === 'ADMIN' ? 'Alex Morgan' : 'Trang Nguyễn'}
+              <span className="text-sm font-semibold text-gray-800 flex-1 text-left">
+                {currentUser.name}
               </span>
             </button>
 
