@@ -13,6 +13,7 @@ export default function MainLayout() {
   const [searchParams] = useSearchParams();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [tasksForModal, setTasksForModal] = useState([]);
+  const [createTaskHandler, setCreateTaskHandler] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -28,6 +29,9 @@ export default function MainLayout() {
 
   const roleParam = searchParams.get('role')?.toUpperCase();
   const currentRole = roleParam === 'USER' ? 'USER' : 'ADMIN';
+  const currentUser = currentRole === 'ADMIN'
+    ? { id: 'admin-demo-user', name: 'Alex Morgan', initials: 'AM', role: 'ADMIN' }
+    : { id: '8ce04f65-ea2c-4279-8350-7c1f0e81c9f5', name: 'Trang Nguyễn', initials: 'TN', role: 'USER' };
 
   // State dữ liệu thông báo giả lập để tính toán badge số lượng
   const [allNotifications, setAllNotifications] = useState([
@@ -423,19 +427,23 @@ export default function MainLayout() {
               )}
             </div>
 
+
+            {/* User Profile */}
             <div className="relative" ref={avatarRef}>
             <button
                 onClick={() => setShowAvatarDropdown(prev => !prev)}
                 className="flex items-center space-x-3 border-l pl-6 border-gray-200 font-['Inter']">
                 <div className="w-10 h-10 rounded-full bg-purple-100 border border-[#2D1B4E] flex items-center justify-center overflow-hidden shrink-0">
-                  <span className="text-[#2D1B4E] text-xs font-bold">
-                    {currentRole === 'ADMIN' ? 'AM' : 'TN'}
-                  </span>
+                  <div className="w-full h-full bg-gradient-to-tr from-purple-200 to-indigo-100 flex items-center justify-center">
+                    <span className="text-[#2D1B4E] text-xs font-bold">
+                      {currentUser.initials}
+                    </span>
+                  </div>
                 </div>
 
               {/* Name Section - flex-1 để đẩy icon sang phải */}
-              <span className="ml-3 text-sm font-semibold text-gray-800 flex-1 text-left">
-                {currentRole === 'ADMIN' ? 'Alex Morgan' : 'Trang Nguyễn'}
+              <span className="text-sm font-semibold text-gray-800 flex-1 text-left">
+                {currentUser.name}
               </span>
             </button>
 
@@ -462,7 +470,7 @@ export default function MainLayout() {
 
         {/* BEGIN: MainContentArea */}
         <main className="flex-1 bg-[#F5F7FA] overflow-y-auto relative" data-purpose="main-display">
-          <Outlet context={{ setShowCreateModal, setTasksForModal }} />
+          <Outlet context={{ setShowCreateModal, setTasksForModal, setCreateTaskHandler, currentRole, currentUser }} />
         </main>
         {/* END: MainContentArea */}
 
@@ -472,6 +480,9 @@ export default function MainLayout() {
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         tasks={tasksForModal}
+        onCreateTask={createTaskHandler}
+        currentRole={currentRole}
+        currentUser={currentUser}
       />
     </div>
   );

@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useOutletContext } from 'react-router-dom';
 import CreateSpaceModal from '../components/tasks/CreateSpaceModal';
  
 const SpaceManagement = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { currentRole = 'ADMIN', currentUser = null } = useOutletContext() || {};
+  const isAdmin = currentRole === 'ADMIN';
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState('Recently Created');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -31,7 +33,8 @@ const SpaceManagement = () => {
       description: 'Final project for task management system integration with enterprise...',
       tasksCount: 25,
       date: '2026-06-01',
-      status: 'Active'
+      status: 'Active',
+      assignedUsers: ['admin-demo-user', '8ce04f65-ea2c-4279-8350-7c1f0e81c9f5']
     },
     {
       id: 'SP-002',
@@ -39,7 +42,8 @@ const SpaceManagement = () => {
       description: 'Headless commerce rebuild with Next.js and high-performance API...',
       tasksCount: 18,
       date: '2026-05-15',
-      status: 'Active'
+      status: 'Active',
+      assignedUsers: ['admin-demo-user', '8ce04f65-ea2c-4279-8350-7c1f0e81c9f5']
     },
     {
       id: 'SP-003',
@@ -47,7 +51,8 @@ const SpaceManagement = () => {
       description: 'Legacy customer relationship management maintenance and data...',
       tasksCount: 12,
       date: '2026-04-20',
-      status: 'Archived'
+      status: 'Archived',
+      assignedUsers: ['admin-demo-user']
     }
   ];
  
@@ -89,13 +94,15 @@ const SpaceManagement = () => {
           <h1 className="text-base font-bold text-[#5e4db2]">Space Management</h1>
           <p className="text-gray-400 text-[11px] mt-1 italic">Manage and organize your team's project ecosystems.</p>
           </div>
-        <button
-          onClick={() => setIsCreateModalOpen(true)}
-          className="bg-[#4C2B74] text-white px-4 py-2 rounded-lg flex items-center text-sm font-semibold hover:bg-opacity-90 transition-all shadow-md active:scale-95"
-        >
+        {isAdmin && (
+          <button
+            onClick={() => setIsCreateModalOpen(true)}
+            className="bg-[#4C2B74] text-white px-4 py-2 rounded-lg flex items-center text-sm font-semibold hover:bg-opacity-90 transition-all shadow-md active:scale-95"
+          >
             <i data-lucide="plus" className="w-4 h-4 mr-2"></i>
             Create Space
           </button>
+        )}
         </div>
  
       {/* Search and Filter Section */}
@@ -214,37 +221,48 @@ const SpaceManagement = () => {
  
       {/* Grid of Space Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredAndSortedSpaces.map(space => (
-          <div key={space.id} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden flex flex-col hover:shadow-md transition-shadow">
-            <div className="p-6 flex-1">
-              <h3 className="text-[15px] font-bold text-[#5e4db2] mb-2">{space.title}</h3>
-              <p className="text-[12px] text-gray-500 leading-relaxed mb-6">{space.description}</p>
- 
-              <div className="flex items-center gap-6 text-gray-500">
-                <div className="flex items-center">
-                  <i data-lucide="check-circle-2" className="w-4 h-4 mr-2 text-[#4C2B74]"></i>
-                  <span className="text-[12px] font-medium">{space.tasksCount} Tasks</span>
-                </div>
-                <div className="flex items-center">
-                  <i data-lucide="calendar" className="w-4 h-4 mr-2 text-[#4C2B74]"></i>
-                  <span className="text-[12px] font-medium">{space.date}</span>
+        {filteredAndSortedSpaces.map(space => {
+          const isAssigned = isAdmin || (space.assignedUsers && space.assignedUsers.includes(currentUser?.id));
+          return (
+            <div key={space.id} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden flex flex-col hover:shadow-md transition-shadow">
+              <div className="p-6 flex-1">
+                <h3 className="text-[15px] font-bold text-[#5e4db2] mb-2">{space.title}</h3>
+                <p className="text-[12px] text-gray-500 leading-relaxed mb-6">{space.description}</p>
+   
+                <div className="flex items-center gap-6 text-gray-500">
+                  <div className="flex items-center">
+                    <i data-lucide="check-circle-2" className="w-4 h-4 mr-2 text-[#4C2B74]"></i>
+                    <span className="text-[12px] font-medium">{space.tasksCount} Tasks</span>
+                  </div>
+                  <div className="flex items-center">
+                    <i data-lucide="calendar" className="w-4 h-4 mr-2 text-[#4C2B74]"></i>
+                    <span className="text-[12px] font-medium">{space.date}</span>
+                  </div>
                 </div>
               </div>
-            </div>
- 
-            <div className="p-4 bg-gray-50/50 border-t border-gray-100">
-              <button
-                onClick={() => navigate(`/dashboard/tasks/${space.id}${location.search}`)}
-                className={`w-full py-2.5 rounded-lg font-bold text-[12px] transition-all shadow-sm ${space.status === 'Active'
-                    ? 'bg-[#4C2B74] text-white hover:bg-[#3D225E]'
-                    : 'bg-[#f0edff] text-[#5e4db2] border border-[#e6e1ff] hover:bg-[#e6e1ff]'
+   
+              <div className="p-4 bg-gray-50/50 border-t border-gray-100">
+                <button
+                  disabled={!isAssigned}
+                  onClick={() => {
+                    if (isAssigned) {
+                      navigate(`/dashboard/tasks/${space.id}${location.search}`);
+                    }
+                  }}
+                  className={`w-full py-2.5 rounded-lg font-bold text-[12px] transition-all shadow-sm ${
+                    !isAssigned
+                      ? 'bg-[#f0edff] text-[#5e4db2] border border-[#e6e1ff] opacity-50 cursor-not-allowed'
+                      : space.status === 'Active'
+                        ? 'bg-[#4C2B74] text-white hover:bg-[#3D225E]'
+                        : 'bg-[#f0edff] text-[#5e4db2] border border-[#e6e1ff] hover:bg-[#e6e1ff]'
                   }`}
-              >
-                View Tasks
-              </button>
+                >
+                  View Tasks
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
  
       <CreateSpaceModal
