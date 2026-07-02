@@ -36,8 +36,8 @@ const AIChatSection = () => {
         {messages.map((msg, idx) => (
           <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div className={`max-w-[70%] px-4 py-3 rounded-lg ${
-              msg.role === 'user' 
-                ? 'bg-[#2D1B4E] text-white' 
+              msg.role === 'user'
+                ? 'bg-[#2D1B4E] text-white'
                 : 'bg-gray-100 text-gray-900'
             }`}>
               <p className="text-sm">{msg.text}</p>
@@ -47,14 +47,14 @@ const AIChatSection = () => {
       </div>
       <div className="p-4 bg-white border-t border-gray-200">
         <div className="relative flex items-center">
-          <input 
-            className="w-full pl-4 pr-12 py-3 rounded-full border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-[#2D1B4E] focus:border-transparent" 
+          <input
+            className="w-full pl-4 pr-12 py-3 rounded-full border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-[#2D1B4E] focus:border-transparent"
             placeholder="Ask a question..."
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSend()}
           />
-          <button 
+          <button
             onClick={handleSend}
             className="absolute right-2 w-9 h-9 bg-[#2D1B4E] text-white rounded-full flex items-center justify-center hover:bg-opacity-90 transition-colors"
           >

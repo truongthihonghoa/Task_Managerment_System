@@ -5,8 +5,8 @@ const FAQItem = ({ question, answer }) => {
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-      <button 
-        className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors" 
+      <button
+        className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors"
         onClick={() => setIsOpen(!isOpen)}
       >
         <span className="font-semibold text-sm text-gray-900">{question}</span>
@@ -23,20 +23,20 @@ const FAQSection = () => (
   <section className="space-y-4">
     <h2 className="text-lg font-semibold text-gray-900">Frequently Asked Questions</h2>
     <div className="flex flex-col gap-3">
-      <FAQItem 
-        question="How do I create a new task?" 
+      <FAQItem
+        question="How do I create a new task?"
         answer="Click the 'Create' button in the top right corner, fill in the task details, and click 'Save' to create your task."
       />
-      <FAQItem 
-        question="Can I assign tasks to multiple users?" 
+      <FAQItem
+        question="Can I assign tasks to multiple users?"
         answer="Yes, you can assign tasks to multiple team members by selecting them from the assignee dropdown when creating or editing a task."
       />
-      <FAQItem 
-        question="How do I change my notification settings?" 
+      <FAQItem
+        question="How do I change my notification settings?"
         answer="Go to Settings > Notification Settings to customize your notification preferences for different types of updates."
       />
-      <FAQItem 
-        question="What are the different task statuses?" 
+      <FAQItem
+        question="What are the different task statuses?"
         answer="Tasks can have statuses like To Do, In Progress, In Review, and Completed. You can change these by dragging tasks between columns or editing the task."
       />
     </div>

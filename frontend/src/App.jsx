@@ -25,6 +25,8 @@ import NotificationsPage from "./pages/NotificationsPage";
 import NotificationSettingsPage from "./pages/NotificationSettingsPage";
 import GeneralSettingsPage from "./pages/GeneralSettingsPage";
 
+
+
 export default function App() {
     return (
         <BrowserRouter>
