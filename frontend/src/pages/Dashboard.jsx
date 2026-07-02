@@ -78,73 +78,143 @@ const userActivities = [
 
 const adminActivities = [
   {
-    user: "System Admin",
-    initials: "SA",
-    avatarColor: "#170338",
+    user: "John Doe",
+    initials: "JD",
+    avatarColor: "#3525cd",
     textColor: "white",
-    action: "created new user",
-    status: "Authentication",
-    statusColor: "bg-purple-50 text-purple-700 border-purple-100",
-    target: "Lê Văn Tám",
+    action: "created user",
+    status: "USER",
+    statusColor: "bg-blue-50 text-blue-700 border-blue-100",
+    target: "UID-9902",
     time: "2026-06-25 09:15:00",
     entityType: "User",
-    ipAddress: "10.0.0.12",
+    ipAddress: "192.168.1.45",
     group: "Today"
   },
   {
-    user: "Phạm Thị Cẩm Tiên",
-    initials: "PT",
-    avatarColor: "#ff4d4d",
+    user: "Sarah Lee",
+    initials: "SL",
+    avatarColor: "#ff0080",
     textColor: "white",
-    action: "updated status to",
-    status: "in_progress",
+    action: "updated task",
+    status: "TASK",
+    statusColor: "bg-teal-50 text-teal-700 border-teal-100",
+    target: "TSK-5541",
+    time: "2026-06-25 09:10:00",
+    entityType: "Task",
+    ipAddress: "10.0.4.12",
+    group: "Today"
+  },
+  {
+    user: "System Bot",
+    initials: "SB",
+    avatarColor: "#4648d4",
+    textColor: "white",
+    action: "refreshed token",
+    status: "TOKEN",
+    statusColor: "bg-slate-100 text-slate-700 border-slate-200",
+    target: "TOK-REF-8",
+    time: "2026-06-25 09:02:00",
+    entityType: "Token",
+    ipAddress: "Internal",
+    group: "Today"
+  },
+  {
+    user: "Emma Wilson",
+    initials: "EW",
+    avatarColor: "#a44100",
+    textColor: "white",
+    action: "uploaded file",
+    status: "ATTACHMENT",
     statusColor: "bg-blue-50 text-blue-700 border-blue-100",
-    target: "SCRUM-44: API Documentation",
-    time: "2026-06-25 07:30:00",
-    entityType: "Task",
-    ipAddress: "192.168.1.102",
-    group: "Today"
-  },
-  {
-    user: "Trang Nguyễn",
-    initials: "TN",
-    avatarColor: "#10b981",
-    textColor: "white",
-    action: "deleted task",
-    status: "cancelled",
-    statusColor: "bg-red-50 text-red-700 border-red-100",
-    target: "SCRUM-99: Dummy Task",
-    time: "2026-06-25 05:20:00",
-    entityType: "Task",
-    ipAddress: "192.168.1.15",
-    group: "Today"
-  },
-  {
-    user: "System",
-    initials: "SYS",
-    avatarColor: "#d1d5db",
-    textColor: "#374151",
-    action: "archived task",
-    status: "done",
-    statusColor: "bg-gray-100 text-gray-700 border-gray-200",
-    target: "Security Audit 2025",
-    time: "2026-06-24 14:00:00",
-    entityType: "Task",
-    ipAddress: "127.0.0.1",
+    target: "invoice_q1_final.pdf",
+    time: "2026-06-25 08:58:00",
+    entityType: "Attachment",
+    ipAddress: "45.78.90.12",
     group: "Yesterday"
   },
   {
-    user: "Admin",
-    initials: "AD",
-    avatarColor: "#4C2B74",
+    user: "Michael Chen",
+    initials: "MC",
+    avatarColor: "#718096",
     textColor: "white",
-    action: "changed role on",
-    status: "Verification",
-    statusColor: "bg-orange-50 text-orange-700 border-orange-100",
-    target: "Nguyễn Văn A (to Manager)",
-    time: "2026-06-24 10:10:00",
+    action: "performed session login",
+    status: "SESSION",
+    statusColor: "bg-slate-100 text-slate-700 border-slate-200",
+    target: "Chrome / MacOS",
+    time: "2026-06-25 08:45:00",
+    entityType: "Session",
+    ipAddress: "172.16.0.8",
+    group: "Yesterday"
+  },
+  {
+    user: "John Doe",
+    initials: "JD",
+    avatarColor: "#3525cd",
+    textColor: "white",
+    action: "created user",
+    status: "USER",
+    statusColor: "bg-blue-50 text-blue-700 border-blue-100",
+    target: "UID-9903",
+    time: "2026-06-24 16:30:00",
     entityType: "User",
-    ipAddress: "10.0.0.1",
+    ipAddress: "192.168.1.45",
+    group: "Yesterday"
+  },
+  {
+    user: "Sarah Lee",
+    initials: "SL",
+    avatarColor: "#ff0080",
+    textColor: "white",
+    action: "deleted comment",
+    status: "COMMENT",
+    statusColor: "bg-red-50 text-red-700 border-red-100",
+    target: "COM-104",
+    time: "2026-06-23 11:24:00",
+    entityType: "Comment",
+    ipAddress: "10.0.4.12",
+    group: "Yesterday"
+  },
+  {
+    user: "Emma Wilson",
+    initials: "EW",
+    avatarColor: "#a44100",
+    textColor: "white",
+    action: "updated task",
+    status: "TASK",
+    statusColor: "bg-teal-50 text-teal-700 border-teal-100",
+    target: "TSK-2291",
+    time: "2026-06-20 14:15:00",
+    entityType: "Task",
+    ipAddress: "45.78.90.12",
+    group: "Yesterday"
+  },
+  {
+    user: "Michael Chen",
+    initials: "MC",
+    avatarColor: "#718096",
+    textColor: "white",
+    action: "performed session login",
+    status: "SESSION",
+    statusColor: "bg-slate-100 text-slate-700 border-slate-200",
+    target: "Safari / iOS",
+    time: "2026-06-18 07:12:00",
+    entityType: "Session",
+    ipAddress: "172.16.0.8",
+    group: "Yesterday"
+  },
+  {
+    user: "John Doe",
+    initials: "JD",
+    avatarColor: "#3525cd",
+    textColor: "white",
+    action: "updated task",
+    status: "TASK",
+    statusColor: "bg-teal-50 text-teal-700 border-teal-100",
+    target: "TSK-3382",
+    time: "2026-06-15 10:00:00",
+    entityType: "Task",
+    ipAddress: "192.168.1.45",
     group: "Yesterday"
   }
 ];
@@ -1634,7 +1704,7 @@ const Dashboard = () => {
                           placeholder="Search operations..."
                           value={modalSearch}
                           onChange={(e) => setModalSearch(e.target.value)}
-                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-100 bg-gray-50 focus:bg-white focus:border-[#4C2B74] outline-none transition-all text-sm font-medium"
+                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-[#4C2B74] hover:border-gray-400 outline-none transition-all text-sm font-medium"
                         />
                       </div>
 
@@ -1645,14 +1715,18 @@ const Dashboard = () => {
                             setShowStatusFilter(!showStatusFilter);
                             setShowDateFilter(false);
                           }}
-                          className={`flex items-center justify-between gap-2 min-w-[140px] px-4 py-2.5 rounded-xl border transition-all text-sm font-bold ${selectedStatus !== "All Status" ? "border-[#4C2B74] text-[#4C2B74] bg-purple-50" : "border-gray-100 text-[#5e636e] hover:bg-gray-50"}`}
+                          className={`flex items-center justify-between gap-2 min-w-[140px] px-4 py-2.5 rounded-xl border transition-all text-sm font-bold ${
+                            selectedStatus !== "All Status" 
+                              ? "border-[#4C2B74] text-[#4C2B74] bg-purple-50" 
+                              : "border-gray-200 text-[#5e636e] hover:border-[#4C2B74] hover:text-[#4C2B74] hover:bg-purple-50/10 bg-white"
+                          }`}
                         >
                           <span className="truncate">{selectedStatus}</span>
                           <span className={`material-symbols-outlined text-gray-400 transition-transform ${showStatusFilter ? 'rotate-180' : ''}`}>expand_more</span>
                         </button>
                         {showStatusFilter && (
                           <div className="absolute top-full left-0 mt-2 w-52 bg-white border border-gray-100 rounded-2xl shadow-xl z-[100] p-2 animate-in fade-in zoom-in-95 duration-200">
-                            {['All Status', 'Done', 'In Progress', 'New'].map(st => (
+                            {['All Status', 'New', 'In Progress', 'In Testing', 'Pending Review', 'Need Revision', 'Done', 'Cancelled'].map(st => (
                               <button
                                 key={st}
                                 onClick={() => { setSelectedStatus(st); setShowStatusFilter(false); }}
@@ -1672,7 +1746,11 @@ const Dashboard = () => {
                             setShowDateFilter(!showDateFilter);
                             setShowStatusFilter(false);
                           }}
-                          className={`flex items-center justify-between gap-2 min-w-[140px] px-4 py-2.5 rounded-xl border transition-all text-sm font-bold ${selectedDate !== "All Dates" ? "border-[#4C2B74] text-[#4C2B74] bg-purple-50" : "border-gray-100 text-[#5e636e] hover:bg-gray-50"}`}
+                          className={`flex items-center justify-between gap-2 min-w-[140px] px-4 py-2.5 rounded-xl border transition-all text-sm font-bold ${
+                            selectedDate !== "All Dates" 
+                              ? "border-[#4C2B74] text-[#4C2B74] bg-purple-50" 
+                              : "border-gray-200 text-[#5e636e] hover:border-[#4C2B74] hover:text-[#4C2B74] hover:bg-purple-50/10 bg-white"
+                          }`}
                         >
                           <div className="flex items-center gap-2 truncate">
                             <span className="material-symbols-outlined text-gray-400 text-lg">calendar_today</span>
