@@ -1,6 +1,15 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
-const AvatarDropdown = ({ currentRole, onClose, onProfileClick, onSettingsClick, onLogoutClick }) => {
+const AvatarDropdown = ({ currentRole, onClose, onProfileClick, onSettingsClick, onLogoutClick, onGeneralClick, onNotificationClick }) => {
+  const [isSettingsExpanded, setIsSettingsExpanded] = useState(false);
+
+  // Re-initialize Lucide icons when submenu expands
+  useEffect(() => {
+    if (window.lucide) {
+      window.lucide.createIcons();
+    }
+  }, [isSettingsExpanded]);
+
   return (
     <div className="w-64 bg-white rounded-xl shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1)] border border-gray-200 overflow-hidden animate-in fade-in zoom-in duration-200">
       {/* User Info Section */}
@@ -26,10 +35,27 @@ const AvatarDropdown = ({ currentRole, onClose, onProfileClick, onSettingsClick,
           <i className="w-4 h-4 text-gray-400" data-lucide="user"></i>
           <span>Profile</span>
         </button>
-        <button onClick={onSettingsClick} className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors text-sm">
-          <i className="w-4 h-4 text-gray-400" data-lucide="settings"></i>
-          <span>Settings</span>
-        </button>
+        <div>
+          <button onClick={() => setIsSettingsExpanded(!isSettingsExpanded)} className="w-full flex items-center justify-between gap-3 px-3 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors text-sm">
+            <div className="flex items-center gap-3">
+              <i className="w-4 h-4 text-gray-400" data-lucide="settings"></i>
+              <span>Settings</span>
+            </div>
+            <i className={`w-4 h-4 text-gray-400 transition-transform ${isSettingsExpanded ? 'rotate-90' : ''}`} data-lucide="chevron-right"></i>
+          </button>
+          {isSettingsExpanded && (
+            <div className="ml-4 mt-1 space-y-1">
+              <button onClick={onGeneralClick} className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors text-sm">
+                <i className="w-4 h-4 text-gray-400" data-lucide="layout-grid"></i>
+                <span>General</span>
+              </button>
+              <button onClick={onNotificationClick} className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors text-sm">
+                <i className="w-4 h-4 text-gray-400" data-lucide="bell"></i>
+                <span>Notification</span>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="border-t border-gray-100"></div>
