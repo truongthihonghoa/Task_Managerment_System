@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 
 
@@ -938,10 +939,10 @@ const Dashboard = () => {
       `}</style>
 
       {/* Activity Modal / Audit Log Table */}
-      {isActivityModalOpen && (
+      {isActivityModalOpen && createPortal(
         <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 sm:p-6 bg-[#170338]/40 backdrop-blur-sm animate-in fade-in duration-300">
           {isAdmin ? (
-            <div className="bg-white w-full max-w-[1240px] rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-300 relative">
+            <div className="bg-white w-full max-w-[1240px] rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-300 relative">
               {/* TOP CLOSE BUTTON */}
               <div className="absolute top-6 right-6 z-50">
                 <button
@@ -1115,10 +1116,10 @@ const Dashboard = () => {
                                 </td>
                                 <td className="px-6 whitespace-nowrap py-2 border-r">
                                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-tight ${log.entityType === 'User' ? 'bg-blue-100 text-blue-700' :
-                                      log.entityType === 'Task' ? 'bg-teal-100 text-teal-700' :
-                                        log.entityType === 'Token' ? 'bg-slate-200 text-slate-700' :
-                                          log.entityType === 'Attachment' ? 'bg-blue-100 text-blue-700' :
-                                            'bg-slate-200 text-slate-700'
+                                    log.entityType === 'Task' ? 'bg-teal-100 text-teal-700' :
+                                      log.entityType === 'Token' ? 'bg-slate-200 text-slate-700' :
+                                        log.entityType === 'Attachment' ? 'bg-blue-100 text-blue-700' :
+                                          'bg-slate-200 text-slate-700'
                                     }`}>
                                     {log.entityType}
                                   </span>
@@ -1210,10 +1211,11 @@ const Dashboard = () => {
               </div>
             </div>
           ) : (
-            <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-300">
+            <div className="bg-white w-full max-w-2xl rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-300">
               <div className="p-8 border-b border-gray-100 flex items-center justify-between bg-white sticky top-0 z-10">
                 <div>
-                  <h3 className="text-2xl font-black text-[#170338] tracking-tight">Recent Activity</h3>
+                  <h3 className="text-2xl font-bold text-[#170338] tracking-tight">
+                    Recent Activity</h3>
                   <p className="text-sm text-[#5e636e] font-medium mt-1 opacity-90">
                     Stay up to date with what's happening across the space.
                   </p>
@@ -1245,7 +1247,8 @@ const Dashboard = () => {
               </div>
             </div>
           )}
-        </div>
+        </div>,
+        document.body
       )}
 
       <div className="dashboard-container space-y-6">
